@@ -1,0 +1,1544 @@
+=======================================================================================================================================
+Patch Title: Patch For 1.9.8 SP1 To 1.9.8 SP2
+
+Patch Release Date: 12-31-2007
+
+Patch Author: John Briggs
+
+Patch Compatibility: 1.9.8 Engage Final SP1 (REQUIRED)
+
+Patch Estimated Install Time: 15-20 minutes
+
+Patch Description:
+This patch will addresses minor bug fixes.
+This patch addresses minor lang variable removals.
+
+=======================================================================================================================================
+=======
+Step 1:
+=======
+
+================================
+Edit File: include/admin.inc.php
+================================
+
+==========
+Find Code:
+==========
+
+    <tr bgcolor="<?php echo $THEME['altbg1']?>" class="tablerow">
+    <td colspan="30" align="center">
+
+==================
+Replace Code With:
+==================
+
+    <tr bgcolor="<?php echo $THEME['altbg1']?>" class="ctrtablerow">
+    <td colspan="30">
+
+==========
+Find Code:
+==========
+
+    <tr class="category">
+    <td valign="top" width="20%" align="center"><strong><font color="<?php echo $THEME['cattext']?>"><?php echo $lang['general']?></font></strong></td>
+    <td valign="top" width="20%" align="center"><strong><font color="<?php echo $THEME['cattext']?>"><?php echo $lang['textforums']?></font></strong></td>
+    <td valign="top" width="20%" align="center"><strong><font color="<?php echo $THEME['cattext']?>"><?php echo $lang['textmembers']?></font></strong></td>
+    <td valign="top" width="20%" align="center"><strong><font color="<?php echo $THEME['cattext']?>"><?php echo $lang['look_feel']?></font></strong></td>
+    </tr>
+
+==================
+Replace Code With:
+==================
+
+    <tr class="ctrcategory">
+    <td valign="top" width="20%"><strong><font color="<?php echo $THEME['cattext']?>"><?php echo $lang['general']?></font></strong></td>
+    <td valign="top" width="20%"><strong><font color="<?php echo $THEME['cattext']?>"><?php echo $lang['textforums']?></font></strong></td>
+    <td valign="top" width="20%"><strong><font color="<?php echo $THEME['cattext']?>"><?php echo $lang['textmembers']?></font></strong></td>
+    <td valign="top" width="20%"><strong><font color="<?php echo $THEME['cattext']?>"><?php echo $lang['look_feel']?></font></strong></td>
+    </tr>
+
+==========
+Find Code:
+==========
+
+    <tr class="category">
+    <td valign="top" width="20%" align="center"><strong><font color="<?php echo $THEME['cattext']?>"><?php echo $lang['logs']?></font></strong></td>
+    <td valign="top" width="20%" align="center"><strong><font color="<?php echo $THEME['cattext']?>"><?php echo $lang['tools']?></font></strong></td>
+    <td valign="top" width="20%" align="center"><strong><font color="<?php echo $THEME['cattext']?>"><?php echo $lang['mysql_tools']?></font></strong></td>
+    <td valign="top" width="20%" align="center"><strong><font color="<?php echo $THEME['cattext']?>"><?php echo $lang['textfaqextra']?></font></strong></td>
+    </tr>
+
+==================
+Replace Code With:
+==================
+
+    <tr class="ctrcategory">
+    <td valign="top" width="20%"><strong><font color="<?php echo $THEME['cattext']?>"><?php echo $lang['logs']?></font></strong></td>
+    <td valign="top" width="20%"><strong><font color="<?php echo $THEME['cattext']?>"><?php echo $lang['tools']?></font></strong></td>
+    <td valign="top" width="20%"><strong><font color="<?php echo $THEME['cattext']?>"><?php echo $lang['mysql_tools']?></font></strong></td>
+    <td valign="top" width="20%"><strong><font color="<?php echo $THEME['cattext']?>"><?php echo $lang['textfaqextra']?></font></strong></td>
+    </tr>
+
+=======================================================================================================================================
+=======
+Step 2:
+=======
+
+====================================
+Edit File: include/functions.inc.php
+====================================
+
+==========
+Find Code:
+==========
+
+function error($msg, $showheader=true, $prepend='', $append='', $redirect=false, $die=true, $return_as_string=false, $showfooter=true) {
+    global $footerstuff, $lang, $navigation;
+
+    if (isset($GLOBALS)) {
+        extract($GLOBALS);
+    }
+
+    $args = func_get_args();
+
+    $message = (isset($args[0]) ? $args[0] : '');
+    $showheader = (isset($args[1]) ? $args[1] : true);
+    $prepend = (isset($args[2]) ? $args[2] : '');
+    $append = (isset($args[3]) ? $args[3] : '');
+    $redirect = (isset($args[4]) ? $args[4] : false);
+    $die = (isset($args[5]) ? $args[5] : true);
+    $return_str = (isset($args[6]) ? $args[6] : false);
+    $showfooter = (isset($args[7]) ? $args[7] : true);
+
+    $navigation = '';
+    nav();
+    nav($lang['error']);
+
+    end_time();
+
+    if ($redirect !== false) {
+        redirect($redirect, 3.0, X_REDIRECT_JS);
+    }
+
+    if ($showheader === false) {
+        $header = '';
+    } else {
+        if (!isset($css) || strlen($css) ==0) {
+            eval('$css = "'.template('css').'";');
+        }
+        eval('$header = "'.template('header').'";');
+    }
+
+    $error = '';
+    eval('$error = "'.template('error').'";');
+    if ($showfooter === true) {
+        eval('$footer = "'.template('footer').'";');
+    } else {
+        $footer = '';
+    }
+
+    if ($return_str !== false) {
+        $return = $prepend . $error . $footer . $append;
+    } else {
+        echo $prepend . $error . $append . $footer;
+        $return = '';
+    }
+
+    if ($die) {
+        exit();
+    }
+    return $return;
+}
+
+function message($msg, $showheader=true, $prepend='', $append='', $redirect=false, $die=true, $return_as_string=false, $showfooter=true) {
+    global $footerstuff, $lang, $navigation;
+
+    if (isset($GLOBALS)) {
+        extract($GLOBALS);
+    }
+
+    $args = func_get_args();
+
+    $messagedisplay = (isset($args[0]) ? $args[0] : '');
+    $showheader = (isset($args[1]) ? $args[1] : true);
+    $prepend = (isset($args[2]) ? $args[2] : '');
+    $append = (isset($args[3]) ? $args[3] : '');
+    $redirect = (isset($args[4]) ? $args[4] : false);
+    $die = (isset($args[5]) ? $args[5] : true);
+    $return_str = (isset($args[6]) ? $args[6] : false);
+    $showfooter = (isset($args[7]) ? $args[7] : true);
+
+    $navigation = '';
+    nav();
+    nav($lang['message']);
+
+    end_time();
+
+    if ($redirect !== false) {
+        redirect($redirect, 3.0, X_REDIRECT_JS);
+    }
+
+    if ($showheader === false) {
+        $header = '';
+    } else {
+        if (!isset($css) || strlen($css) ==0) {
+            eval('$css = "'.template('css').'";');
+        }
+        eval('$header = "'.template('header').'";');
+    }
+
+    $message = '';
+    eval('$message = "'.template('message').'";');
+    if ($showfooter === true) {
+        eval('$footer = "'.template('footer').'";');
+    } else {
+        $footer = '';
+    }
+
+    if ($return_str !== false) {
+        $return = $prepend . $message . $footer . $append;
+    } else {
+        echo $prepend . $message . $append . $footer;
+        $return = '';
+    }
+
+    if ($die) {
+        exit();
+    }
+    return $return;
+}
+
+==================
+Replace Code With:
+==================
+
+function error($msg, $showheader=true, $prepend='', $append='', $redirect=false, $die=true, $return_as_string=false, $showfooter=true) {
+    global $footerstuff, $lang, $navigation;
+
+    if (isset($GLOBALS)) {
+        extract($GLOBALS);
+    }
+
+    $args = func_get_args();
+
+    $message = (isset($args[0]) ? $args[0] : '');
+    $showheader = (isset($args[1]) ? $args[1] : true);
+    $prepend = (isset($args[2]) ? $args[2] : '');
+    $append = (isset($args[3]) ? $args[3] : '');
+    $redirect = (isset($args[4]) ? $args[4] : false);
+    $die = (isset($args[5]) ? $args[5] : true);
+    $return_str = (isset($args[6]) ? $args[6] : false);
+    $showfooter = (isset($args[7]) ? $args[7] : true);
+
+    $header = $footer = $return = '';
+
+    nav($lang['error']);
+
+    end_time();
+
+    if ($redirect !== false) {
+        redirect($redirect, 3.0, X_REDIRECT_JS);
+    }
+
+    if ($showheader === false) {
+        $header = '';
+    } else {
+        if (!isset($css) || strlen($css) ==0) {
+            eval('$css = "'.template('css').'";');
+        }
+        eval('$header = "'.template('header').'";');
+    }
+
+    $error = '';
+    eval('$error = "'.template('error').'";');
+
+    if ($showfooter === true) {
+        eval('$footer = "'.template('footer').'";');
+    } else {
+        $footer = '';
+    }
+
+    if ($return_str !== false) {
+        $return = $prepend . $error . $append . $footer;
+    } else {
+        echo $prepend . $error . $append . $footer;
+        $return = '';
+    }
+
+    if ($die) {
+        exit();
+    }
+    return $return;
+}
+
+function message($msg, $showheader=true, $prepend='', $append='', $redirect=false, $die=true, $return_as_string=false, $showfooter=true) {
+    global $footerstuff, $lang, $navigation;
+
+    if (isset($GLOBALS)) {
+        extract($GLOBALS);
+    }
+
+    $args = func_get_args();
+
+    $message = (isset($args[0]) ? $args[0] : '');
+    $showheader = (isset($args[1]) ? $args[1] : true);
+    $prepend = (isset($args[2]) ? $args[2] : '');
+    $append = (isset($args[3]) ? $args[3] : '');
+    $redirect = (isset($args[4]) ? $args[4] : false);
+    $die = (isset($args[5]) ? $args[5] : true);
+    $return_str = (isset($args[6]) ? $args[6] : false);
+    $showfooter = (isset($args[7]) ? $args[7] : true);
+
+    $header = $footer = $return = '';
+
+    nav($lang['message']);
+
+    end_time();
+
+    if ($redirect !== false) {
+        redirect($redirect, 3.0, X_REDIRECT_JS);
+    }
+
+    if ($showheader === false) {
+        $header = '';
+    } else {
+        if (!isset($css) || strlen($css) ==0) {
+            eval('$css = "'.template('css').'";');
+        }
+        eval('$header = "'.template('header').'";');
+    }
+
+    $success = '';
+    eval('$success = "'.template('message').'";');
+
+    if ($showfooter === true) {
+        eval('$footer = "'.template('footer').'";');
+    } else {
+        $footer = '';
+    }
+
+    if ($return_str !== false) {
+        $return = $prepend . $success . $append . $footer;
+    } else {
+        echo $prepend . $success . $append . $footer;
+        $return = '';
+    }
+
+    if ($die) {
+        exit();
+    }
+    return $return;
+}
+
+==========
+Find Code:
+==========
+
+    $forumselect[] = '<option value="" disabled="disabled">&nbsp;</option>';
+
+==================
+Replace Code With:
+==================
+
+    $forumselect[] = '<option value="0" disabled="disabled">&nbsp;</option>';
+
+==========
+Find Code:
+==========
+
+function forumJump() {
+    global $db, $self, $lang;
+
+    $restrict = array();
+    switch($self['status']) {
+        case 'Member':
+            $restrict[] = "private != '3'";
+        case 'Moderator':
+        case 'Super Moderator':
+            $restrict[] = "private != '2'";
+        case 'Administrator':
+            $restrict[] = "userlist = ''";
+        case 'Super Administrator':
+            break;
+        default:
+            $restrict[] = "private != '3'";
+            $restrict[] = "private != '2'";
+            $restrict[] = "userlist = ''";
+            $restrict[] = "password = ''";
+            break;
+    }
+    $restrict = implode(' AND ', $restrict);
+
+    if ($restrict != '') {
+        $sql = $db->query("SELECT fid, type, name, fup, status, private, userlist, password, displayorder FROM ".X_PREFIX."forums WHERE $restrict AND status='on' ORDER BY displayorder");
+    } else {
+        $sql = $db->query("SELECT fid, type, name, fup, private, userlist, password, displayorder FROM ".X_PREFIX."forums ORDER BY displayorder");
+    }
+
+    $standAloneForums = array();
+    $forums = array();
+    $categories = array();
+    $subforums = array();
+    while($forum = $db->fetch_array($sql)) {
+        $forum['name'] = html_entity_decode($forum['name']);
+        if (!X_SADMIN && $forum['password'] != '') {
+            $fidpw = isset($_COOKIE['fidpw'.$forum['fid']]) ? trim($_COOKIE['fidpw'.$forum['fid']]) : '';
+            if ($forum['password'] !== $fidpw) {
+                continue;
+            }
+        }
+
+        switch($forum['type']) {
+            case 'group':
+                $categories[] = $forum;
+                break;
+            case 'sub':
+                if (!isset($subforums[$forum['fup']])) {
+                    $subforums[$forum['fup']] = array();
+                }
+                $subforums[$forum['fup']][] = $forum;
+                break;
+            case 'forum':
+            default:
+                if ($forum['fup'] == 0) {
+                    $standAloneForums[] = $forum;
+                } else {
+                    if (!isset($forums[$forum['fup']])) {
+                        $forums[$forum['fup']] = array();
+                    }
+                    $forums[$forum['fup']][] = $forum;
+                }
+                break;
+        }
+    }
+    $db->free_result($sql);
+
+    $forumselect = array();
+
+    $forumselect[] = "<select onchange=\"if (this.options[this.selectedIndex].value) {window.location=(''+this.options[this.selectedIndex].value)}\">";
+    $forumselect[] = '<option value="" selected="selected">'.$lang['forumjumpselect'].'</option>';
+
+    unset($forum);
+    reset($forums);
+
+    foreach($standAloneForums as $forum) {
+        $forumselect[] = '<option value="'.ROOT.'forumdisplay.php?fid='.$forum['fid'].'"> &nbsp; &raquo; '.stripslashes($forum['name']).'</option>';
+        if (isset($subforums[$forum['fid']])) {
+            foreach($subforums[$forum['fid']] as $sub) {
+                $forumselect[] = '<option value="'.ROOT.'forumdisplay.php?fid='.$sub['fid'].'">&nbsp; &nbsp; &raquo; '.stripslashes($sub['name']).'</option>';
+            }
+        }
+    }
+
+    foreach($categories as $group) {
+        if (isset($forums[$group['fid']])) {
+            $forumselect[] = '<option value=""></option>';
+            $forumselect[] = '<option value="'.ROOT.'index.php?gid='.$group['fid'].'">'.stripslashes($group['name']).'</option>';
+            foreach($forums[$group['fid']] as $forum) {
+                $forumselect[] = '<option value="'.ROOT.'forumdisplay.php?fid='.$forum['fid'].'"> &nbsp; &raquo; '.stripslashes($forum['name']).'</option>';
+                if (isset($subforums[$forum['fid']])) {
+                    foreach($subforums[$forum['fid']] as $sub) {
+                        $forumselect[] = '<option value="'.ROOT.'forumdisplay.php?fid='.$sub['fid'].'">&nbsp; &nbsp; &raquo; '.stripslashes($sub['name']).'</option>';
+                    }
+                }
+            }
+        }
+    }
+    $forumselect[] = '</select>';
+    return implode("\n", $forumselect);
+}
+
+==================
+Replace Code With:
+==================
+
+function forumJump() {
+    global $db, $self, $lang;
+
+    $restrict = array();
+    switch($self['status']) {
+        case 'Member':
+            $restrict[] = "private != '3'";
+        case 'Moderator':
+        case 'Super Moderator':
+            $restrict[] = "private != '2'";
+        case 'Administrator':
+            $restrict[] = "userlist = ''";
+        case 'Super Administrator':
+            break;
+        default:
+            $restrict[] = "private != '3'";
+            $restrict[] = "private != '2'";
+            $restrict[] = "userlist = ''";
+            $restrict[] = "password = ''";
+            break;
+    }
+    $restrict = implode(' AND ', $restrict);
+
+    if ($restrict != '') {
+        $sql = $db->query("SELECT fid, type, name, fup, status, private, userlist, password, displayorder FROM ".X_PREFIX."forums WHERE $restrict AND status='on' ORDER BY displayorder");
+    } else {
+        $sql = $db->query("SELECT fid, type, name, fup, private, userlist, password, displayorder FROM ".X_PREFIX."forums ORDER BY displayorder");
+    }
+
+    $standAloneForums = array();
+    $forums = array();
+    $categories = array();
+    $subforums = array();
+    while($forum = $db->fetch_array($sql)) {
+        $forum['name'] = html_entity_decode($forum['name']);
+        if (!X_SADMIN && $forum['password'] != '') {
+            $fidpw = isset($_COOKIE['fidpw'.$forum['fid']]) ? trim($_COOKIE['fidpw'.$forum['fid']]) : '';
+            if ($forum['password'] !== $fidpw) {
+                continue;
+            }
+        }
+
+        switch($forum['type']) {
+            case 'group':
+                $categories[] = $forum;
+                break;
+            case 'sub':
+                if (!isset($subforums[$forum['fup']])) {
+                    $subforums[$forum['fup']] = array();
+                }
+                $subforums[$forum['fup']][] = $forum;
+                break;
+            case 'forum':
+            default:
+                if ($forum['fup'] == 0) {
+                    $standAloneForums[] = $forum;
+                } else {
+                    if (!isset($forums[$forum['fup']])) {
+                        $forums[$forum['fup']] = array();
+                    }
+                    $forums[$forum['fup']][] = $forum;
+                }
+                break;
+        }
+    }
+    $db->free_result($sql);
+
+    $forumselect = array();
+
+    $forumselect[] = "<select onchange=\"if (this.options[this.selectedIndex].value) {window.location=(''+this.options[this.selectedIndex].value)}\">";
+    $forumselect[] = '<option value="0" selected="selected">'.$lang['forumjumpselect'].'</option>';
+
+    unset($forum);
+    reset($forums);
+
+    foreach($standAloneForums as $forum) {
+        $forumselect[] = '<option value="'.ROOT.'forumdisplay.php?fid='.intval($forum['fid']).'"> &nbsp; &raquo; '.stripslashes($forum['name']).'</option>';
+        if (isset($subforums[$forum['fid']])) {
+            foreach($subforums[$forum['fid']] as $sub) {
+                $forumselect[] = '<option value="'.ROOT.'forumdisplay.php?fid='.intval($sub['fid']).'">&nbsp; &nbsp; &raquo; '.stripslashes($sub['name']).'</option>';
+            }
+        }
+    }
+
+    foreach($categories as $group) {
+        if (isset($forums[$group['fid']])) {
+            $forumselect[] = '<option value="0"></option>';
+            $forumselect[] = '<option value="'.ROOT.'index.php?gid='.intval($group['fid']).'">'.stripslashes($group['name']).'</option>';
+            foreach($forums[$group['fid']] as $forum) {
+                $forumselect[] = '<option value="'.ROOT.'forumdisplay.php?fid='.intval($forum['fid']).'"> &nbsp; &raquo; '.stripslashes($forum['name']).'</option>';
+                if (isset($subforums[$forum['fid']])) {
+                    foreach($subforums[$forum['fid']] as $sub) {
+                        $forumselect[] = '<option value="'.ROOT.'forumdisplay.php?fid='.intval($sub['fid']).'">&nbsp; &nbsp; &raquo; '.stripslashes($sub['name']).'</option>';
+                    }
+                }
+            }
+        }
+    }
+    $forumselect[] = '</select>';
+    return implode("\n", $forumselect);
+}
+
+=======================================================================================================================================
+=======
+Step 3:
+=======
+
+==============================
+Edit File: include/u2u.inc.php
+==============================
+
+==========
+Find Code:
+==========
+
+        $u2umessage = checkOutput(postify($u2u['message'], 'no', '', 'yes', 'no'));
+
+==================
+Replace Code With:
+==================
+
+        $u2umessage = html_entity_decode(checkOutput(postify($u2u['message'], 'no', '', 'yes', 'no')));
+
+==========
+Find Code:
+==========
+
+        $u2usubject = stripslashes(checkOutput(censor($u2u['subject'])));
+        $u2umessage = postify(stripslashes($u2u['message']), 'no', 'no', 'yes', 'no', 'yes', 'yes', false, "no", "yes");;
+
+==================
+Replace Code With:
+==================
+
+        $u2usubject = html_entity_decode(stripslashes(checkOutput(censor($u2u['subject']))));
+        $u2umessage = postify(html_entity_decode(stripslashes($u2u['message'])), 'no', 'no', 'yes', 'no', 'yes', 'yes', false, "no", "yes");;
+
+==========
+Find Code:
+==========
+
+            altMail($self['email'], $lang['textu2utoemail'] . " " . $u2usubject, $email, 'From: '.$bbname.' <'.$self['email'].">\r\n".'Content-type: text/html');
+
+==================
+Replace Code With:
+==================
+
+            altMail($self['email'], $lang['textu2utoemail']." ".$u2usubject, $email, 'From: '.$bbname.' <'.$self['email'].">\r\n".'Content-type: text/html');
+
+=======================================================================================================================================
+=======
+Step 4:
+=======
+
+================================
+Edit File: lang/English.lang.php
+================================
+
+===================
+Find Code & Delete:
+===================
+
+$lang['altpoweredbymysql'] = "Powered by MySQL";
+$lang['altpoweredbyphp'] = "Powered by PHP";
+
+==========
+Find Code:
+==========
+
+$lang['altrules'] = "Forum Rules";
+
+==================
+Replace Code With:
+==================
+
+$lang['altrules'] = "Board Rules";
+
+===================
+Find Code & Delete:
+===================
+
+$lang['alttriplea'] = "Triple A Accessibility";
+
+===================
+Find Code & Delete:
+===================
+
+$lang['altvalidxhtml'] = "Validate this site's XHTML";
+
+=======================================================================================================================================
+=======
+Step 5:
+=======
+
+==========================
+Edit File: editprofile.php
+==========================
+
+==========
+Find Code:
+==========
+
+    $newavatar = formVar('newavatar') ? ereg_replace(' ', '%20', $newavatar) : '';
+    $avatar = checkInput($newavatar, 'no', 'no', 'javascript', false);
+
+==================
+Replace Code With:
+==================
+
+    $newavatar = formVar('newavatar');
+    $avatar = $newavatar ? checkInput($newavatar, 'no', 'no', 'javascript', false) : '';
+
+=======================================================================================================================================
+=======
+Step 6:
+=======
+
+=========================
+Edit File: header.php.php
+=========================
+
+==========
+Find Code:
+==========
+
+    $service_pack = ' SP1';
+    $versionbuild = 20071212;
+
+==================
+Replace Code With:
+==================
+
+    $service_pack = ' SP2';
+    $versionbuild = 20071231;
+
+=======================================================================================================================================
+=======
+Step 7:
+=======
+
+===================
+Edit File: misc.php
+===================
+
+==========
+Find Code:
+==========
+
+    case 'search':
+        if ($SETTINGS['searchstatus'] == 'off') {
+            eval('echo "'.template('header').'";');
+            eval('echo "'.template('misc_feature_notavailable').'";');
+            end_time();
+            eval('echo "'.template('footer').'";');
+            exit();
+        }
+
+        $searchresults = '';
+        $page = getInt('page');
+
+        if (noSubmit('searchsubmit') && !$page) {
+            $forumselect = forumList('srchfid', true, true);
+            eval('$search = "'.template('misc_search').'";');
+            $misc = stripslashes($search);
+        } else {
+            $srchuname = getVar('srchuname');
+            $srchtxt = getVar('srchtxt');
+            $srchfid = getInt('srchfid');
+            $srchfrom = getInt('srchfrom');
+            $filter_distinct = getVar('filter_distinct');
+            if ($filter_distinct != 'yes') {
+                $filter_distinct = formYesNo('filter_distinct');
+            }
+
+            if (!$srchuname) {
+                $srchuname = formVar('srchuname');
+            }
+
+            if (!$srchtxt) {
+                $srchtxt = formVar('srchtxt');
+            }
+
+            if (!$srchfid) {
+                $srchfid = formInt('srchfid');
+            }
+
+            if (!$srchfrom) {
+                $srchfrom = formInt('srchfrom');
+            }
+
+            if (!$srchfid) {
+                $srchfid = 'all';
+            }
+
+            if (!$srchuname && !$srchtxt || (strlen($srchuname) < 3 && strlen($srchtxt) < 3)) {
+                error($lang['nosearchq']);
+            }
+
+            if (!$srchuname || strlen($srchuname) < 3) {
+                $srchuname = '';
+            }
+
+            if (!$srchtxt || strlen($srchtxt) < 3) {
+                $srchtxt = '';
+            }
+
+            $results = 0;
+
+            if (onSubmit('searchsubmit') || $page) {
+                if (!$page) {
+                    $page = 1;
+                    $offset = 0;
+                    $start = 0;
+                    $end = ((isset($ppp) && $ppp > 0) ? $ppp : (isset($SETTINGS['postperpage']) && $SETTINGS['postperpage'] > 0 ? $SETTINGS['postperpage'] : 20));
+                } else {
+                    if ($page < 1) {
+                        $page = 1;
+                    }
+
+                    $offset = ($page-1) * ((isset($ppp) && $ppp > 0) ? $ppp : (isset($SETTINGS['postperpage']) && $SETTINGS['postperpage'] > 0 ? $SETTINGS['postperpage'] : 20));
+                    $start = $offset;
+                    $end = ((isset($ppp) && $ppp > 0) ? $ppp : (isset($SETTINGS['postperpage']) && $SETTINGS['postperpage'] > 0 ? $SETTINGS['postperpage'] : 20));
+                }
+                $sql = "SELECT p.*, t.tid AS ttid, t.subject AS tsubject, f.fup AS fup, f.type AS type, f.fid, f.private AS fprivate, f.userlist AS fuserlist, f.password AS password FROM ".X_PREFIX."posts p, ".X_PREFIX."threads t LEFT JOIN ".X_PREFIX."forums f ON f.fid=t.fid WHERE p.tid=t.tid";
+
+                if ($srchfrom == 0) {
+                    $srchfrom = $onlinetime;
+                    $srchfromold = 0;
+                } else {
+                    $srchfromold = $srchfrom;
+                }
+
+                $ext = array();
+
+                $srchfrom = $onlinetime - (int) $srchfrom;
+                if ($srchtxt) {
+                    $srchtxtsq = addslashes(str_replace(array('%', '_'), array('\%', '\_'), $srchtxt));
+                    $sql .= " AND (p.message LIKE '%$srchtxtsq%' OR p.subject LIKE '%$srchtxtsq%' OR t.subject LIKE '%$srchtxtsq')";
+                    $ext[] = 'srchtxt='.$srchtxt;
+                }
+
+                if ($srchuname != '') {
+                    $sql .= " AND p.author='".addslashes($srchuname)."'";
+                    $ext[] = 'srchuname='.$srchuname;
+                }
+
+                if ($srchfid != 'all' && $srchfid != '') {
+                    $sql .= " AND p.fid='$srchfid'";
+                    $ext[] = 'srchfid='.$srchfid;
+                }
+
+                if ($srchfrom) {
+                    $sql .= " AND p.dateline >= '$srchfrom'";
+                    $ext[] = 'srchfrom'.$srchfromold;
+                }
+
+                $sql .=" ORDER BY dateline DESC LIMIT $start,$end";
+                if (!$page || $page < 1) {
+                    $pagenum = 2;
+                } else {
+                    $pagenum = $page+1;
+                }
+
+                $querysrch = $db->query($sql);
+
+                if ($srchuname) {
+                    $srchtxt = '\0';
+                }
+
+                if ($filter_distinct == 'yes') {
+                    $temparray = array();
+                    $searchresults = '';
+                    while($post = $db->fetch_array($querysrch)) {
+                        $fidpw = isset($_COOKIE['fidpw'.$post['fid']]) ? $_COOKIE['fidpw'.$post['fid']] : '';
+                        $authorization = privfcheck($post['fprivate'], $post['fuserlist']);
+                        if (($post['password'] != '' && $post['password'] != $fidpw) && !X_SADMIN) {
+                            continue;
+                        }
+
+                        if (isset($post['type']) && $post['type'] == 'sub') {
+                            $query = $db->query("SELECT private, userlist, name, fid FROM ".X_PREFIX."forums WHERE fid='$post[fup]'");
+                            $fup = $db->fetch_array($query);
+                            if (!privfcheck($fup['private'], $fup['userlist'])) {
+                                continue;
+                            }
+                            $db->free_result($query);
+                        }
+
+                        if ($authorization) {
+                            if (!array_key_exists($post['ttid'], $temparray)) {
+                                $tid = $post['ttid'];
+                                $temparray[$tid] = true;
+                                $message = $post['message'];
+                                $srchtxt = str_replace(array('_ ', ' _','% ', ' %'), '', $srchtxt);
+                                $position = strpos($message, $srchtxt, 0);
+                                $show_num = 100;
+                                $msg_leng = strlen($message);
+
+                                if ($position <= $show_num) {
+                                    $min = 0;
+                                    $add_pre = '';
+                                } else {
+                                    $min = $position - $show_num;
+                                    $add_pre = '...';
+                                }
+
+                                if (($msg_leng - $position) <= $show_num) {
+                                    $max = $msg_leng;
+                                    $add_post = '';
+                                } else {
+                                    $max = $position + $show_num;
+                                    $add_post = '...';
+                                }
+
+                                $show = substr($message, $min, $max);
+                                $show = str_replace($srchtxt, '<b><i>'.$srchtxt.'</i></b>', $show);
+                                $show = postify($show, 'no', 'yes', 'yes', 'no', 'no', 'no');
+
+                                $date = gmdate($dateformat, $post['dateline'] + ($timeoffset * 3600) + ($addtime * 3600));
+                                $time = gmdate($timecode, $post['dateline'] + ($timeoffset * 3600) + ($addtime * 3600));
+                                $poston = $date.' '.$lang['textat'].' '.$time;
+                                $postby = $post['author'];
+
+                                $post['tsubject'] = html_entity_decode(stripslashes(censor($post['tsubject'])));
+                                if (trim($post['subject']) == '') {
+                                    $post['subject'] = $post['tsubject'];
+                                } else {
+                                    $post['subject'] = html_entity_decode($post['subject']);
+                                }
+
+                                $post['subject'] = censor($post['subject']);
+                                eval('$searchresults .= "'.template('misc_search_results_row').'";');
+
+                                $results++;
+                            }
+                        }
+                    }
+                } else {
+                    while($post = $db->fetch_array($querysrch)) {
+                        $fidpw = isset($_COOKIE['fidpw'.$post['fid']]) ? $_COOKIE['fidpw'.$post['fid']] : '';
+                        $authorization = privfcheck($post['fprivate'], $post['fuserlist']);
+
+                        if (($post['password'] != '' && $post['password'] != $fidpw) && !X_SADMIN) {
+                            continue;
+                        }
+
+                        if (isset($post['type']) && $post['type'] == 'sub') {
+                            $query = $db->query("SELECT private, userlist, name, fid FROM ".X_PREFIX."forums WHERE fid='$post[fup]'");
+                            $fup = $db->fetch_array($query);
+                            if (!privfcheck($fup['private'], $fup['userlist'])) {
+                                continue;
+                            }
+                            $db->free_result($query);
+                        }
+
+                        if ($authorization) {
+                            $tid = $post['ttid'];
+                            $message = $post['message'];
+
+                            $srchtxt = str_replace(array('_ ', ' _','% ', ' %'), '', $srchtxt);
+                            $position = strpos($message, $srchtxt, 0);
+                            $show_num = 100;
+                            $msg_leng = strlen($message);
+
+                            if ($position <= $show_num) {
+                                $min = 0;
+                                $add_pre = '';
+                            } else {
+                                $min = $position - $show_num;
+                                $add_pre = '...';
+                            }
+
+                            if (($msg_leng - $position) <= $show_num) {
+                                $max = $msg_leng;
+                                $add_post = '';
+                            } else {
+                                $max = $position + $show_num;
+                                $add_post = '...';
+                            }
+
+                            $show = substr($message, $min, $max);
+                            $show = str_replace($srchtxt, '<strong><em>'.$srchtxt.'</em></strong>', $show);
+                            $show = postify($show, 'no', 'yes', 'yes', 'no', 'no', 'no');
+
+                            $date = gmdate($dateformat, $post['dateline'] + ($timeoffset * 3600) + ($addtime * 3600));
+                            $time = gmdate($timecode, $post['dateline'] + ($timeoffset * 3600) + ($addtime * 3600));
+                            $poston = $date.' '.$lang['textat'].' '.$time;
+                            $postby = $post['author'];
+
+                            $post['tsubject'] = stripslashes(censor($post['tsubject']));
+                            if (trim($post['subject']) == '') {
+                                $post['subject'] = html_entity_decode($post['tsubject']);
+                            } else {
+                                $post['tsubject'] = html_entity_decode($post['subject']);
+                            }
+                            eval('$searchresults .= "'.template('misc_search_results_row').'";');
+                            $results++;
+                        }
+                    }
+                }
+            }
+
+            if ($results == 0) {
+                eval('$searchresults = "'.template('misc_search_results_none').'";');
+            } else if ($results == ((isset($ppp) && $ppp > 0) ? $ppp : (isset($SETTINGS['postperpage']) && $SETTINGS['postperpage'] > 0 ? $SETTINGS['postperpage'] : 20))) {
+                $ext = htmlspecialchars(implode('&', $ext));
+                eval('$nextlink = "'.template('misc_search_nextlink').'";');
+            }
+
+            eval('$search = "'.template('misc_search_results').'";');
+            $misc = stripslashes($search);
+        }
+        break;
+
+==================
+Replace Code With:
+==================
+
+    case 'search':
+        if ($SETTINGS['searchstatus'] == 'off') {
+            eval('echo "'.template('header').'";');
+            eval('echo "'.template('misc_feature_notavailable').'";');
+            end_time();
+            eval('echo "'.template('footer').'";');
+            exit();
+        }
+
+        $srchfrom = intval(getRequestVar('srchfrom'));
+        $srchtxt = addslashes(getRequestVar('srchtxt'));
+        $srchuname = addslashes(getRequestVar('srchuname'));
+        $srchfid = formArray('srchfid');
+        if (empty($srchfid)) {
+            $srchfid[] = 'all';
+        }
+
+        $filter_distinct = getRequestVar('filter_distinct');
+        $filter_distinct = valYesNo($filter_distinct);
+
+        $page = getInt('page');
+        if ($page < 1) {
+            $page = 1;
+        }
+
+        validatePpp();
+
+        $searchresults = '';
+
+        if (noSubmit('searchsubmit')) {
+            $forumselect = forumList('srchfid[]', true, true);
+            eval('$search = "'.template('misc_search').'";');
+            $misc = stripslashes($search);
+        } else {
+            if (!$srchuname && !$srchtxt || (strlen($srchuname) < 3 && strlen($srchtxt) < 3)) {
+                error($lang['nosearchq']);
+            }
+
+            if (!$srchuname || strlen($srchuname) < 3) {
+                $srchuname = '';
+            }
+
+            if (!$srchtxt || strlen($srchtxt) < 3) {
+                $srchtxt = '';
+            }
+
+            if (onSubmit('searchsubmit')) {
+                $offset = ($page-1) * $ppp;
+                $start = $offset;
+                $end = $ppp;
+
+                $sql = "SELECT p.*, t.tid AS ttid, t.subject AS tsubject, f.fup AS fup, f.type AS type, f.fid, f.private AS fprivate, f.userlist AS fuserlist, f.password AS password FROM ".X_PREFIX."posts p, ".X_PREFIX."threads t LEFT JOIN ".X_PREFIX."forums f ON f.fid=t.fid WHERE p.tid=t.tid";
+
+                if ($srchfrom == 0) {
+                    $srchfrom = $onlinetime;
+                    $srchfromold = 0;
+                } else {
+                    $srchfromold = $srchfrom;
+                }
+
+                $ext = array();
+
+                $srchfrom = $onlinetime - (int) $srchfrom;
+                if ($srchtxt) {
+                    $srchtxtsq = addslashes(str_replace(array('%', '_'), array('\%', '\_'), $srchtxt));
+                    $sql .= " AND (p.message LIKE '%$srchtxtsq%' OR p.subject LIKE '%$srchtxtsq%' OR t.subject LIKE '%$srchtxtsq')";
+                    $ext[] = 'srchtxt='.$srchtxt;
+                }
+
+                if ($srchuname != '') {
+                    $sql .= " AND p.author='".addslashes($srchuname)."'";
+                    $ext[] = 'srchuname='.$srchuname;
+                }
+
+                $all = false;
+                $strsql = '';
+                if (!empty($srchfid)) {
+                    foreach($srchfid as $dummy=>$fid) {
+                        if ($fid == 'all') {
+                            $all = true;
+                            break;
+                        }
+                        $strsql .= "'".intval($fid)."', ";
+                    }
+                    $strsql = substr($strsql, 0, -2);
+                }
+
+                if ($all == false) {
+                    $sql .= " AND p.fid IN ($strsql)";
+                    $ext[] = 'srchfid IN ('.$strsql.')';
+                }
+
+                if ($srchfrom) {
+                    $sql .= " AND p.dateline >= '$srchfrom'";
+                    $ext[] = 'srchfrom'.((int)$srchfromold);
+                }
+
+                $sql .=" GROUP BY dateline ORDER BY dateline DESC LIMIT $start,$end";
+                $pagenum = $page + 1;
+
+                $querysrch = $db->query($sql);
+                $results = $db->num_rows($querysrch);
+
+                if ($srchuname) {
+                    $srchtxt = '\0';
+                }
+
+                if ($filter_distinct == 'yes') {
+                    $temparray = array();
+                    $searchresults = '';
+                    while($post = $db->fetch_array($querysrch)) {
+                        $fidpw = isset($_COOKIE['fidpw'.$post['fid']]) ? $_COOKIE['fidpw'.$post['fid']] : '';
+                        $authorization = privfcheck($post['fprivate'], $post['fuserlist']);
+                        if (($post['password'] != '' && $post['password'] != $fidpw) && !X_SADMIN) {
+                            continue;
+                        }
+
+                        if (isset($post['type']) && $post['type'] == 'sub') {
+                            $query = $db->query("SELECT private, userlist, name, fid FROM ".X_PREFIX."forums WHERE fid='$post[fup]'");
+                            $fup = $db->fetch_array($query);
+                            if (!privfcheck($fup['private'], $fup['userlist'])) {
+                                continue;
+                            }
+                            $db->free_result($query);
+                        }
+
+                        if ($authorization) {
+                            if (!array_key_exists($post['ttid'], $temparray)) {
+                                $tid = $post['ttid'];
+                                $temparray[$tid] = true;
+
+                                if ($post['status'] == 'Banned') {
+                                    $post['message'] = $lang['bannedpostmsg'];
+                                }
+
+                                $message = $post['message'];
+
+                                $srchtxt = str_replace(array('_ ', ' _','% ', ' %'), '', $srchtxt);
+                                $position = strpos($message, $srchtxt, 0);
+
+                                $show_num = 100;
+                                $msg_leng = strlen($message);
+
+                                if ($position <= $show_num) {
+                                    $min = 0;
+                                    $add_pre = '';
+                                } else {
+                                    $min = $position - $show_num;
+                                    $add_pre = '...';
+                                }
+
+                                if (($msg_leng - $position) <= $show_num) {
+                                    $max = $msg_leng;
+                                    $add_post = '';
+                                } else {
+                                    $max = $position + $show_num;
+                                    $add_post = '...';
+                                }
+
+                                $show = substr($message, $min, $max);
+                                $show = preg_replace("/($srchtxt)/i", '<strong><em>\\0</em></strong>', $show);
+                                $show = postify($show, 'no', 'yes', 'yes', 'no', 'no', 'no');
+
+                                $date = gmdate($dateformat, $post['dateline'] + ($timeoffset * 3600) + ($addtime * 3600));
+                                $time = gmdate($timecode, $post['dateline'] + ($timeoffset * 3600) + ($addtime * 3600));
+                                $poston = $date.' '.$lang['textat'].' '.$time;
+                                $postby = $post['author'];
+
+                                $post['tsubject'] = html_entity_decode(stripslashes(censor($post['tsubject'])));
+                                if (trim($post['subject']) == '') {
+                                    $post['subject'] = $post['tsubject'];
+                                } else {
+                                    $post['subject'] = html_entity_decode($post['subject']);
+                                }
+
+                                $post['subject'] = censor($post['subject']);
+
+                                if ($post['posts'] > $ppp) {
+                                    $pbefore = $db->result($db->query("SELECT COUNT(pid) FROM ".X_PREFIX."posts WHERE tid = '".$post['ttid']."' AND pid < '".$post['pid']."'"), 0);
+                                    $page = ceil(($pbefore+1)/$ppp);
+                                } else {
+                                    $page = 1;
+                                }
+                                eval('$searchresults .= "'.template('misc_search_results_row').'";');
+                            }
+                        }
+                    }
+                    $db->free_result($querysrch);
+                } else {
+                    while($post = $db->fetch_array($querysrch)) {
+                        $fidpw = isset($_COOKIE['fidpw'.$post['fid']]) ? $_COOKIE['fidpw'.$post['fid']] : '';
+                        $authorization = privfcheck($post['fprivate'], $post['fuserlist']);
+
+                        if (($post['password'] != '' && $post['password'] != $fidpw) && !X_SADMIN) {
+                            continue;
+                        }
+
+                        if (isset($post['type']) && $post['type'] == 'sub') {
+                            $query = $db->query("SELECT private, userlist, name, fid FROM ".X_PREFIX."forums WHERE fid='$post[fup]'");
+                            $fup = $db->fetch_array($query);
+                            if (!privfcheck($fup['private'], $fup['userlist'])) {
+                                continue;
+                            }
+                            $db->free_result($query);
+                        }
+
+                        if ($authorization) {
+                            $tid = $post['ttid'];
+                            if ($post['status'] == 'Banned') {
+                                $post['message'] = $lang['bannedpostmsg'];
+                            }
+
+                            $message = $post['message'];
+
+                            $srchtxt = str_replace(array('_ ', ' _','% ', ' %'), '', $srchtxt);
+
+                            $position = 0;
+                            if (!empty($srchtxt)) {
+                                $position = strpos($message, $srchtxt, 0);
+                            }
+
+                            $show_num = 100;
+                            $msg_leng = strlen($message);
+
+                            if ($position <= $show_num) {
+                                $min = 0;
+                                $add_pre = '';
+                            } else {
+                                $min = $position - $show_num;
+                                $add_pre = '...';
+                            }
+
+                            if (($msg_leng - $position) <= $show_num) {
+                                $max = $msg_leng;
+                                $add_post = '';
+                            } else {
+                                $max = $position + $show_num;
+                                $add_post = '...';
+                            }
+
+                            $show = substr($message, $min, $max);
+                            $show = preg_replace("/($srchtxt)/i", '<strong><em>\\0</em></strong>', $show);
+                            $show = postify($show, 'no', 'yes', 'yes', 'no', 'no', 'no');
+
+                            $date = gmdate($dateformat, $post['dateline'] + ($timeoffset * 3600) + ($addtime * 3600));
+                            $time = gmdate($timecode, $post['dateline'] + ($timeoffset * 3600) + ($addtime * 3600));
+                            $poston = $date.' '.$lang['textat'].' '.$time;
+                            $postby = $post['author'];
+
+                            $post['tsubject'] = stripslashes(censor($post['tsubject']));
+                            if (trim($post['subject']) == '') {
+                                $post['subject'] = html_entity_decode($post['tsubject']);
+                            } else {
+                                $post['tsubject'] = html_entity_decode($post['subject']);
+                            }
+
+                            if ($post['posts'] > $ppp) {
+                                $pbefore = $db->result($db->query("SELECT COUNT(pid) FROM ".X_PREFIX."posts WHERE tid = '".$post['ttid']."' AND pid < '".$post['pid']."'"), 0);
+                                $page = ceil(($pbefore+1)/$ppp);
+                            } else {
+                                $page = 1;
+                            }
+                            eval('$searchresults .= "'.template('misc_search_results_row').'";');
+                        }
+                    }
+                    $db->free_result($querysrch);
+                }
+            }
+
+            if ($results == 0) {
+                eval('$searchresults = "'.template('misc_search_results_none').'";');
+            } else if ($results == $ppp) {
+                $ext = htmlspecialchars(implode('&', $ext));
+                eval('$nextlink = "'.template('misc_search_nextlink').'";');
+            }
+
+            eval('$search = "'.template('misc_search_results').'";');
+            $misc = stripslashes($search);
+        }
+        break;
+
+=======================================================================================================================================
+=======
+Step 8:
+=======
+
+====================
+Edit File: memcp.php
+====================
+
+==========
+Find Code:
+==========
+
+        $newavatar = formVar('newavatar') ? ereg_replace(' ', '%20', $newavatar) : '';
+        $avatar = checkInput($newavatar, 'no', 'no', 'javascript', false);
+
+==================
+Replace Code With:
+==================
+
+        $newavatar = formVar('newavatar');
+        $avatar = $newavatar ? checkInput($newavatar, 'no', 'no', 'javascript', false) : '';
+
+=======================================================================================================================================
+=======
+Step 9:
+=======
+
+===================
+Edit File: post.php
+===================
+
+==========
+Find Code:
+==========
+
+$pid = getInt('pid');
+$tid = getInt('tid');
+$fid = getInt('fid');
+
+==================
+Replace Code With:
+==================
+
+$pid = getRequestInt('pid');
+$tid = getRequestInt('tid');
+$fid = getRequestInt('fid');
+
+==========
+Find Code:
+==========
+
+        nav('<a href="forumdisplay.php?fid='.$fup['fid'].'">'.html_entity_decode(stripslashes($fup['name'])).'</a>');
+
+==================
+Replace Code With:
+==================
+
+        nav('<a href="forumdisplay.php?fid='.intval($fup['fid']).'">'.html_entity_decode(stripslashes($fup['name'])).'</a>');
+
+==========
+Find Code:
+==========
+
+message($lang['replymsg'], false, '', '', "viewthread.php?tid=${tid}&page=${topicpages}#pid${pid}", true, false, true);
+
+===============
+Add Code Above:
+===============
+
+$topicpages = quickpage($posts, $ppp);
+
+=======================================================================================================================================
+========
+Step 10:
+========
+
+=========================
+Edit File: viewthread.php
+=========================
+
+==========
+Find Code:
+==========
+
+$tid = getInt('tid');
+
+===============
+Add Code Below:
+===============
+
+$fid = getInt('fid');
+
+==========
+Find Code:
+==========
+
+$ssForumName = html_entity_decode(stripslashes($forum['name']));
+if (isset($forum['type']) && $forum['type'] == 'forum') {
+    nav('<a href="forumdisplay.php?fid='.$fid.'"> '.$ssForumName.'</a>');
+    nav(checkOutput(stripslashes($thread['subject']), 'no', '', true));
+} else {
+    nav('<a href="forumdisplay.php?fid='.$fup['fid'].'">'.html_entity_decode(stripslashes($fup['name'])).'</a>');
+    nav('<a href="forumdisplay.php?fid='.$fid.'">'.$ssForumName.'</a>');
+    nav(checkOutput(stripslashes($thread['subject']), 'no', '', true));
+}
+
+==================
+Replace Code With:
+==================
+
+if (isset($forum['type']) && $forum['type'] == 'forum') {
+    nav('<a href="forumdisplay.php?fid='.$fid.'">'.html_entity_decode(stripslashes($forum['name'])).'</a>');
+    nav(checkOutput(stripslashes($thread['subject']), 'no', '', true));
+} else {
+    if (isset($forum['type']) && $forum['type'] == 'sub') {
+        nav('<a href="forumdisplay.php?fid='.intval($fup['fid']).'">'.html_entity_decode(stripslashes($fup['name'])).'</a>');
+        nav('<a href="forumdisplay.php?fid='.$fid.'">'.html_entity_decode(stripslashes($forum['name'])).'</a>');
+        nav(checkOutput(stripslashes($thread['subject']), 'no', '', true));
+    }
+}
+
+==========
+Find Code:
+==========
+
+    $keys = array_rand($smiliecache, $max);
+
+==================
+Replace Code With:
+==================
+
+    // Fix for Invalid argument supplied for foreach()
+    // Provided by JDaniels
+    if ($max == 1) {
+        $keys = array_keys($smiliecache, $max);
+    } else {
+        $keys = array_rand($smiliecache, $max);
+    }
+
+==========
+Find Code:
+==========
+
+    $name = $file['filename'];
+
+==================
+Replace Code With:
+==================
+
+    $name = str_replace(' ', '_', $file['filename']);
+
+=======================================================================================================================================
+========
+Step 11:
+========
+
+===============================
+Go To Admin Panel -> Templates:
+===============================
+
+======================
+Edit Template: message
+======================
+
+=================
+Replace All With:
+=================
+
+$header
+<table cellspacing="0" cellpadding="0" border="0" width="$tablewidth" align="center" bgcolor="$bordercolor">
+<tr>
+<td>
+<table border="0" cellspacing="$borderwidth" cellpadding="$tablespace" width="100%">
+<tr>
+<td class="category"><font color="$cattext"><strong>$lang[message]</strong></font></td>
+</tr>
+<tr>
+<td class="tablerow" bgcolor="$altbg1">$message</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+
+==========================
+Edit Template: misc_search
+==========================
+
+=================
+Replace All With:
+=================
+
+<form method="post" action="misc.php?action=search">
+<input type="hidden" name="token" value="$oToken->newToken" />
+<table cellspacing="0" cellpadding="0" border="0" width="$tablewidth" align="center">
+<tr>
+<td bgcolor="$bordercolor">
+<table border="0" cellspacing="$borderwidth" cellpadding="$tablespace" width="100%">
+<tr>
+<td colspan="2" class="category"><font color="$cattext"><strong>$lang[textsearch]</strong></font></td>
+</tr>
+<tr class="tablerow">
+<td bgcolor="$altbg1" width="22%">$lang[textsearchfor]</td>
+<td bgcolor="$altbg2"><input type="text" name="srchtxt" size="30" maxlength="40" /></td>
+</tr>
+<tr class="tablerow">
+<td bgcolor="$altbg1" width="22%">$lang[textsrchuname]</td>
+<td bgcolor="$altbg2"><input type="text" name="srchuname" size="30" maxlength="40" /></td>
+</tr>
+<tr class="tablerow">
+<td bgcolor="$altbg1" width="22%">$lang[srchbyforum]</td>
+<td bgcolor="$altbg2">$forumselect</td>
+</tr>
+<tr class="tablerow">
+<td bgcolor="$altbg1" width="22%">$lang[textlfrom]</td>
+<td bgcolor="$altbg2">
+<select name="srchfrom">
+<option value="86400">$lang[day1]</option>
+<option value="604800" $selHTML>$lang[aweek]</option>
+<option value="2592000">$lang[month1]</option>
+<option value="7948800">$lang[month3]</option>
+<option value="15897600">$lang[month6]</option>
+<option value="31536000">$lang[lastyear]</option>
+<option value="0">$lang[beginning]</option>
+</select>
+</td>
+</tr>
+<tr class="tablerow">
+<td bgcolor="$altbg1" width="22%">$lang[srchfilter_double]</td>
+<td bgcolor="$altbg2"><input type="checkbox" name="filter_distinct" value="yes" checked="checked" /></td>
+</tr>
+<tr class="ctrtablerow">
+<td bgcolor="$altbg2" colspan="2"><input type="submit" class="submit" name="searchsubmit" value="$lang[textsearch]" /></td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</form>
+
+===================================
+Edit Template: misc_search_nextlink
+===================================
+
+=================
+Replace All With:
+=================
+
+<tr class="mediumtxt" bgcolor="$altbg1">
+<td colspan="3" align="right"><a href="misc.php?action=search&amp;page=$pagenum&amp;$ext&amp;filter_distinct=$filter_distinct&amp;searchsubmit=a">$lang[nextsearch]</a></td>
+</tr>
+
+==================================
+Edit Template: misc_search_results
+==================================
+
+=================
+Replace All With:
+=================
+
+<table cellspacing="0" cellpadding="0" border="0" width="$tablewidth" align="center">
+<tr>
+<td bgcolor="$bordercolor">
+<table border="0" cellspacing="$borderwidth" cellpadding="$tablespace" width="100%">
+<tr>
+<td class="category" colspan="3"><font color="$cattext"><strong>$lang[textsearch]</strong></font></td>
+</tr>
+$nextlink
+$searchresults
+$nextlink
+</table>
+</td>
+</tr>
+</table>
+
+======================================
+Edit Template: misc_search_results_row
+======================================
+
+=================
+Replace All With:
+=================
+
+<tr class="tablerow">
+<td bgcolor="$altbg1"><strong><a href="viewthread.php?tid=$post[ttid]&amp;page=$page#pid$post[pid]">$post[tsubject]</a></strong><br />$add_pre $show $add_post</td>
+<td bgcolor="$altbg1">$poston<br />$lang[textby]: $postby</td>
+</tr>
+
+=======================================================================================================================================
