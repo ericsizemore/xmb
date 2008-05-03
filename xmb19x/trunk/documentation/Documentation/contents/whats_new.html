@@ -1,6 +1,6 @@
 <html>
 <head>
-<title>XMB 1.9.8 Engage Documentation</title>
+<title>XMB 1.9.8 Engage SP3 Documentation</title>
 
 <meta http-equiv="content-type" content="text/html; charset=iso-8859-1" />
 <meta name="publisher" content="The XMB Group" />
@@ -14,20 +14,26 @@
 <body>
 <span id="pageTitle">What's New</span>
 
-No changelog information exists for 1.9.8 Engage. 1.9.8 Engage's
-codebase was rolled back and is based on John Brigg's 1.9.5 SP1. This
-new codebase incorporates a multitude of bug and security fixes and is
-considered to be more secure than 1.9.7 Nexus.
+No changelog information exists for 1.9.8 Engage SP3.
 <br />
 <br />
 
-The following are the primary feature additions:
+The following are the primary bugfix additions:
 <ul style="margin-top: 5px;">
-	<li>New poll system</li>
-	<li>Validation routines</li>
-	<li>Mass moderation</li>
-	<li>CAPTCHA integration</li>
-	<li>MySQL 5 compatibility</li>
+	<li> Avatar URLs with "&" or "php" never saved.</li>
+	<li> Can't delete attachments using Control Panel</li>
+	<li> Captchaimages table in the database grows out of control.</li>
+	<li> Censors don't work if the same word is typed repeatedly.</li>
+	<li> Control Panel won't save apostrophes in website title.</li>
+	<li> Full text profile search doesn't work.</li>
+	<li> Logout doesn't work on password-protected forums.</li>
+	<li> Passwords with leading or trailing whitespace don't always work.</li>
+	<li> Rename attachment doesn't work.</li>
+	<li> Spaces in attachment filenames change to underscores.</li>
+	<li> Status code was 200 when transmitting "forum not found" errors.</li>
+	<li> Top/Untop causes SQL error if no threads are selected.</li>
+	<li> User profiles shows character entities like "&amp;"</li>
+	<li> Usernames with "&" in them causing broken links and tools.</li>
 </ul>
 </body>
 </html>
