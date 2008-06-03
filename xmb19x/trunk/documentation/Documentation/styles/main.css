@@ -3,10 +3,12 @@ body
 	font:				normal 12px Tahoma, Verdana, sans-serif;
 	margin-top:			50px;
 	background-color:	#CDCECF;
+	text-align: center;
 }
 
 #wrapper
 {
+	text-align: left;
 	width:				760px;
 	margin:				0px auto 0px auto;
 	background-color:	#AEBBCF;
@@ -44,57 +46,6 @@ body
 {
 	color:				#5472A4;
 	text-decoration:	underline;
-}
-
-#leftCol
-{
-	width:				115px;
-	float:				left;
-	text-align:			left;
-	padding-right:		10px;
-	padding-top:		5px;
-	background-color:	#AEBBCF;
-}
-
-#leftColNav
-{
-	margin:				0px;
-	padding-left:		5px;
-}
-
-#leftColNav ul
-{
-	list-style:			none;
-	margin:				0px;
-	padding:			0px;
-}
-
-#leftColNav li
-{
-	list-style:			none;
-	margin-left:		0px;
-	padding:			3px;
-}
-
-#leftColNav a
-{
-	color:				#000000;
-}
-
-#rightCol
-{
-	width:				600px;
-	padding-left:		10px;
-	float:				right;
-	background-color:	#AEBBCF;
-	border-left:		1px solid #2E3E55;
-}
-
-#clear
-{
-	clear:				both;
-	min-height:			1px;
-	background-color:	#AEBBCF;
 }
 
 #footer
