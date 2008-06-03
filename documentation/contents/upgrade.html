@@ -1,6 +1,6 @@
 <html>
 <head>
-	<title>XMB 1.9.8 Engage SP3 Documentation</title>
+	<title>XMB 1.9.10 Karl Documentation</title>
 
 	<meta http-equiv="content-type" content="text/html; charset=iso-8859-1" />
 	<meta name="publisher" content="The XMB Group" />
@@ -11,54 +11,64 @@
 </head>
 
 <body>
-	<span id="pageTitle">Upgrading to XMB 1.9.8 Engage SP3</span>
+	<span id="pageTitle">Upgrading to XMB 1.9.10 Karl</span>
 	
 	Upgrading is a one-way process.  To backout you will need to restore your files and database from a backup.
 	<br /><br />
 	
-	<strong>Known Issues</strong>
+	<strong>Backup Your Forum</strong>
 	<br />
-	These are known issues with the upgrader.  However, they will only affect a small percentage of XMB Forum users.
-	
-	<ul style="margin-top: 5px;">
-		<li>Upgrading can be quite resource intensive, especially with large databases.</li>
-		<li>The upgrade script may appear to time out or be inactive.  Do NOT stop it or close your browser window.</li>
-		<li>The upgrade script can consume up to two times the amount of disk space you are currently using.  
-			Make sure your disk space quota is set accordingly.</li>
-		<li>The upgrade script cannot cope with some indexes.  If the upgrader does stop while trying to drop, alter, or add an index, you will need to
-			manually remove all indexes from the corresponding table.  Remove as many indexes as possible as the upgrade script will put back in place
-			the one's it needs.  After manually dropping all indexes, restart the upgrader.</li>
-		<li>The upgrade script occasionally fails to handle out of order columns, particularly in the settings table.  If the upgrader stops while
-			modifying any table, you will need to manually change the table yourself.  Once the table is similar to the new table schema, simply
-			re-start the upgrader.</li>
-	</ul>
-	
+	Please backup both your forums database and files before continuing.  This may seem like common sense but is often forgotten.
+	If the upgrade process fails and you do not have a backup, XMB will be unable to help you.  All data could be lost: posts, users,
+	etc.  You have been warned!
+	<br /><br />
+
 	<strong>Modifications Notice</strong>
 	<br />
 	This upgrader is designed to work with modifications installed.  However, all modification data, templates and code, will be destroyed during the
 	upgrade process.  Please proceed with extreme caution if you wish to keep your modification data intact.
 	<br /><br />
 	
-	<strong>Backup Your Forum</strong>
+	<strong>Known Issues</strong>
 	<br />
-	Please backup both your forums database and files before continuing.  This may seem like common sense but is often forgotten.
-	If the upgrade process fails and you do not have a backup, XMB will be unable to help you.  All data could be lost: posts, users, 
-	etc.  You have been warned!
-	<br /><br />
-	
-	<strong>Upgrading</strong>
+	These are known issues with the upgrader.  However, they will only affect a small percentage of XMB Forum users.
+
+	<ul style="margin-top: 5px;">
+		<li>Upgrading can be quite resource intensive, especially with large databases.</li>
+		<li>The upgrade script may appear to time out or be inactive.  Do NOT stop it or close your browser window.</li>
+		<li>The upgrade script can consume up to two times the amount of disk space you are currently using.
+			Make sure your disk space quota is set accordingly.</li>
+		<li>The upgrade script occasionally fails to handle out of order columns, particularly in the settings table.
+        <li>If the upgrader stops while modifying any table, please contact the support staff at <a href="http://www.xmbforum.com/">XMBForum.com</a>.
+            Restore your database and original files from backups if necessary.</li>
+	</ul>
+
+	<strong>Normal Upgrade Instructions</strong>
 
 	<ol style="margin-top: 5px;">
-		<li>Disable posting in the settings section of the Administration Panel.</li>
-		<li>Upload all 1.9.8 SP3 files over the top of your existing files.</li>
+        <li>Backup the database and all files.  Remember to keep the config.php settings handy.</li>
+		<li>Disable XMB using the Board Status setting of the Administration Panel.</li>
+		<li>Upload all 1.9.10 files over the top of your existing files.</li>
 		<li>Delete the /install/ directory and all files in it.</li>
 		<li>Edit the <i>new</i> config.php file with your details.  It may be helpful to reference your old config.php.</li>
 		<li>Upload the /upgrade/ directory to your forum directory.</li>
 		<li>Run: <a href="http://www.yourdomain.com/path/upgrade/upgrade.php" title="Upgrade to XMB 1.9.8 Engage">http://www.yourdomain.com/path/upgrade/upgrade.php</a>.</li>
 		<li>Upon completion, verify that the /upgrade/ directory has been removed.</li>
-		<li>Re-enable posting in the settings section of the Administration Panel.</li>
+		<li>Enable XMB using the Board Status setting of the Administration Panel.</li>
 	</ol>
 	
-	<strong>Enjoy XMB 1.9.8 Engage SP3!</strong>
+	<strong>Alternative Upgrade Paths</strong>
+	<ul style="margin-top: 5px;">
+        <li>XMB 1.9.9 - If you are an early adopter of version 1.9.9, then you may migrate to 1.9.10 without changing your database.
+            After uploading all files, use the Administration Panel -> Templates -> Restore All to import the version 1.9.10 templates.
+        <li>XMB 1.9.9 - Complete diff & patch information will be provided to anyone who wants to manually edit their PHP files.
+        <li>XMB 1.9.8 SP2/SP3 - An alternative upgrade script will be provided to anyone who wants to avoid the normal upgrade utility.
+            This script is specific to one version can only be used to upgrade that version of XMB.
+        <li>XMB 1.9.8 SP2/SP3 - Complete diff & patch information will be provided to anyone who wants to manually edit their PHP files.
+        <li>XMB 1.9.x - The Normal Upgrade path is recommended for these older versions.
+        <li>XMB 1.8 - Upgrading to XMB 1.9.1 is a required (and not always easy) requirement.
+	</ul>
+
+	<strong>Enjoy XMB 1.9.10 Karl!</strong>
 </body>
 </html>
