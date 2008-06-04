@@ -17,26 +17,42 @@
 <ul style="margin-top: 5px;">
 	<li><strong>XMB 1.9.10</strong></li>
 	<li>Released on ... </li>
-	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=764614">CVE-2004-1862</a> Closed
+	<li>MySQL Requirement raised to 4.0.16</li>
+	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=764614">CVE-2004-1862</a> Closed.</li>
 	<li>New forum permissions system.</li>
-	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=764894">Added Avatars to U2U messages</a></li>
-	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=765017">Added More Smilies Pop-up Links</a></li>
-	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=764249">Added U2U links to the Address Book</a></li>
-	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=764911">Better Unicode support within message bodies</a></li>
-	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=764835">Fixed verify email addresses links</a></li>
-	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=764872">Fixed U2U Folder bugs</a></li>
-	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=764874">Fixed i/o problems in the settings page</a></li>
-	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=764898">Fixed Moods Not Parsed Correctly</a></li>
-	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=764828">Fixed Feature - Fix Last Posts - Very Slow</a></li>
-	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=764907">Fixed Avatar List Option</a></li>
-	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=764922">Fixed Theme Creation Bug</a></li>
-	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=764977">Fixed Syntax Problem in CP Search</a></li>
-	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=764978">Fixed Banned Members Cannot Logout</a></li>
-	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=765013">Fixed broken links to profiles</a></li>
-	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=764704">Changed the Merge Threads dialog</a></li>
-	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=764483">Added pid links from Search to viewthread</a></li>
-	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=765058">Spell Check now consumes apostrophes and rejects digits</a></li>
-	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=765086">Fixed Captcha contrast with theme colors</a></li>
+	<li>New flow of control in post.php mitigates lost input.</li>
+	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=764894">Added Avatars to U2U messages.</a></li>
+	<li>Added Client-side avatar dimension checking.</a></li>
+	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=765093">Added Config.php corruption checking.</a></li>
+	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=765017">Added More Smilies Pop-up Links.</a></li>
+	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=764483">Added PID links from Search to viewthread.</a></li>
+	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=764249">Added U2U links to the Address Book.</a></li>
+	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=764829">Better Forum management page.</a></li>
+	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=764681">Better Magic-quote handling.</a></li>
+	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=764911">Better Unicode support within message bodies.</a></li>
+	<li>Fixed Avatar dimension checking on servers with allow_url_fopen = false.</li>
+	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=764704">Changed the Merge Threads dialog.</a></li>
+	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=764907">Fixed Avatar List option.</a></li>
+	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=764978">Fixed Banned Members Cannot Logout.</a></li>
+	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=765013">Fixed Broken links to profiles.</a></li>
+	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=765086">Fixed Captcha contrast with theme colors.</a></li>
+	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=764667">Fixed Delete Posts in the admin panel member search.</a></li>
+	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=764828">Fixed Feature - Fix Last Posts - Very Slow.</a></li>
+	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=764874">Fixed I/O problems in the settings page.</a></li>
+    <li>Fixed Many problems in topicadmin.php</li>
+	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=764898">Fixed Moods Not Parsed Correctly.</a></li>
+	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=764586">Fixed Octet limitation in IP Banning.</a></li>
+	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=765164">Fixed Prune feature in admin panel.</a></li>
+	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=764977">Fixed Syntax bugs in CP Search.</a></li>
+	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=764922">Fixed Theme Creation Bug.</a></li>
+	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=764872">Fixed U2U Folder bugs.</a></li>
+	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=764982">Fixed Upgrade failures caused by inadequate index logic.</a></li>
+	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=764835">Fixed Verify email address links.</a></li>
+	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=764774">Moved 'report post' and 'vote' features from topicadmin to new vtmisc.php file.</a></li>
+	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=764859">Removed $threadSubject from header.php.</a></li>
+	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=764663">Removed usernames from javascript Popup() calls.</a></li>
+	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=765058">Spell Check now consumes apostrophes and rejects digits.</a></li>
+	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=765155">Updated and corrected the server version checks.</a></li>
 <br />
 	<li><strong>XMB 1.9.9</strong></li>
     <li>Released on 26 March 2008.</li>
@@ -44,8 +60,9 @@
 <br />
 	<li><strong>XMB 1.9.8 SP3</strong></li>
 	<li>Released on 9 May 2008</li>
-	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=764607">CVE-2005-2574</a> Closed</li>
-	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=764626">CVE-2006-1748</a> Closed</li>
+	<li>PHP Requirement raised to 4.3.0</li>
+	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=764607">CVE-2005-2574</a> Closed.</li>
+	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=764626">CVE-2006-1748</a> Closed.</li>
 	<li>Fixed Avatar URLs with "&" or "php" never saved.</li>
 	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=764582">Fixed BB Code parsing inside [code] tags.</a></li>
 	<li><a href="http://forums.xmbforum.com/viewthread.php?tid=764543">Fixed Can't delete attachments using Control Panel.</a></li>
