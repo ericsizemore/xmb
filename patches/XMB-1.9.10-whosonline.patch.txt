@@ -1,0 +1,91 @@
+Index: include/online.inc.php
+===================================================================
+--- include/online.inc.php	(revision 1360)
++++ include/online.inc.php	(working copy)
+@@ -35,6 +35,7 @@
+     static $restrict, $rset, $fname, $tsub;
+ 
+     if (!$rset) {
++        $fids = array();
+         if (X_SADMIN) {
+             $q = $db->query("SELECT fid FROM ".X_PREFIX."forums WHERE status = 'on'");
+             while($f = $db->fetch_array($q)) {
+@@ -42,7 +43,7 @@
+             }
+         } else {
+             $fCache = array();
+-            $q = $db->query("SELECT fid, postperm, userlist, password, type, fup FROM ".X_PREFIX."forums WHERE status = 'on' AND type != 'group' ORDER BY type ASC");
++            $q = $db->query("SELECT fid, postperm, userlist, password, moderator, type, fup FROM ".X_PREFIX."forums WHERE status = 'on' AND type != 'group' ORDER BY type ASC");
+             while($forum = $db->fetch_array($q)) {
+                 $perms = checkForumPermissions($forum);
+                 $fCache[$forum['fid']] = $perms;
+@@ -61,8 +62,12 @@
+             }
+         }
+ 
+-        $fids = implode(',', $fids);
+-        $restrict = ' f.fid IN('.$fids.')';
++        if (count($fids) > 0) {
++            $fids = implode(',', $fids);
++            $restrict = ' f.fid IN('.$fids.')';
++        } else {
++            $restrict = ' 0=1';
++        }
+ 
+         $rset = true;
+     }
+@@ -274,4 +279,4 @@
+     $return['text'] = $location;
+     return $return;
+ }
+-?>
+\ No newline at end of file
++?>
+Index: stats.php
+===================================================================
+--- stats.php	(revision 1360)
++++ stats.php	(working copy)
+@@ -52,7 +52,7 @@
+     }
+ } else {
+     $fCache = array();
+-    $q = $db->query("SELECT fid, postperm, userlist, password, type, fup FROM ".X_PREFIX."forums WHERE status = 'on' AND type != 'group' ORDER BY type ASC");
++    $q = $db->query("SELECT fid, postperm, userlist, password, moderator, type, fup FROM ".X_PREFIX."forums WHERE status = 'on' AND type != 'group' ORDER BY type ASC");
+     while($forum = $db->fetch_array($q)) {
+         $perms = checkForumPermissions($forum);
+         $fCache[$forum['fid']] = $perms;
+@@ -71,8 +71,12 @@
+     }
+ }
+ 
+-$fids = implode(',', $fids);
+-$restrict = ' fid IN ('.$fids.')';
++if (count($fids) > 0) {
++    $fids = implode(',', $fids);
++    $restrict = ' fid IN ('.$fids.')';
++} else {
++    $restrict = ' 0=1';
++}
+ 
+ $query = $db->query("SELECT COUNT(uid) FROM ".X_PREFIX."members UNION ALL SELECT COUNT(tid) FROM ".X_PREFIX."threads UNION ALL SELECT COUNT(pid) FROM ".X_PREFIX."posts");
+ $members = $db->result($query, 0);
+Index: today.php
+===================================================================
+--- today.php	(revision 1360)
++++ today.php	(working copy)
+@@ -62,7 +62,7 @@
+     }
+ } else {
+     $fCache = array();
+-    $q = $db->query("SELECT fid, postperm, userlist, password, type, fup FROM ".X_PREFIX."forums WHERE status = 'on' AND type != 'group' ORDER BY type ASC");
++    $q = $db->query("SELECT fid, postperm, userlist, password, moderator, type, fup FROM ".X_PREFIX."forums WHERE status = 'on' AND type != 'group' ORDER BY type ASC");
+     while($forum = $db->fetch_array($q)) {
+         $perms = checkForumPermissions($forum);
+         $fCache[$forum['fid']] = $perms;
+@@ -214,4 +214,4 @@
+ 
+ end_time();
+ eval('echo "'.template('footer').'";');
+-?>
+\ No newline at end of file
++?>
