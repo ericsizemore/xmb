@@ -1,6 +1,6 @@
 <html>
 <head>
-	<title>XMB 1.9.10 Karl Documentation</title>
+<title>XMB 1.9.11 Forum Software Documentation</title>
 
 	<meta http-equiv="content-type" content="text/html; charset=iso-8859-1" />
 	<meta name="publisher" content="The XMB Group" />
@@ -11,7 +11,7 @@
 </head>
 
 <body>
-	<span id="pageTitle">Upgrading to XMB 1.9.10 Karl</span>
+	<span id="pageTitle">Upgrading to XMB 1.9.11</span>
 	
 	Upgrading is a one-way process.  To backout you will need to restore your files and database from a backup.
 	<br /><br />
@@ -43,32 +43,34 @@
             Restore your database and original files from backups if necessary.</li>
 	</ul>
 
-	<strong>Normal Upgrade Instructions</strong>
+	<strong>Normal Upgrade Instructions for Versions 1.9.5 through 1.9.10</strong>
 
 	<ol style="margin-top: 5px;">
         <li>Backup the database and all files.  Remember to keep the config.php settings handy.</li>
 		<li>Disable XMB using the Board Status setting of the Administration Panel.</li>
-		<li>Upload all 1.9.10 files over the top of your existing files.</li>
+		<li>Upload all 1.9.11 files over the top of your existing files.</li>
 		<li>Delete the /install/ directory and all files in it.</li>
 		<li>Edit the <i>new</i> config.php file with your details.  It may be helpful to reference your old config.php.</li>
 		<li>Upload the /upgrade/ directory to your forum directory.</li>
-		<li>Run: <a href="http://www.yourdomain.com/path/upgrade/upgrade.php" title="Upgrade to XMB 1.9.8 Engage">http://www.yourdomain.com/path/upgrade/upgrade.php</a>.</li>
+		<li>Run: http://www.yourdomain.com/path/upgrade/upgrade.php</li>
 		<li>Upon completion, verify that the /upgrade/ directory has been removed.</li>
 		<li>Enable XMB using the Board Status setting of the Administration Panel.</li>
 	</ol>
 	
 	<strong>Alternative Upgrade Paths</strong>
 	<ul style="margin-top: 5px;">
-        <li>XMB 1.9.9 - If you are an early adopter of version 1.9.9, then you may migrate to 1.9.10 without changing your database.
-            After uploading all files, use the Administration Panel -> Templates -> Restore All to import the version 1.9.10 templates.
-        <li>XMB 1.9.9 - Complete diff & patch information will be provided to anyone who wants to manually edit their PHP files.
-        <li>XMB 1.9.8 SP2/SP3 - An alternative upgrade script will be provided to anyone who wants to avoid the normal upgrade utility.
+        <li>XMB 1.9.10 - An alternative upgrade script will be provided to anyone who wants to avoid the normal upgrade utility.
             This script is specific to one version can only be used to upgrade that version of XMB.
-        <li>XMB 1.9.8 SP2/SP3 - Complete diff & patch information will be provided to anyone who wants to manually edit their PHP files.
-        <li>XMB 1.9.x - The Normal Upgrade path is recommended for these older versions.
-        <li>XMB 1.8 - Upgrading to XMB 1.9.1 is a requirement.
+            This option is preferred for very large boards and for webmasters who need to preserve extra columns of data in the xmb tables.
+        <li>XMB 1.9.10 - Complete diff & patch information will be provided to anyone who wants to manually edit their PHP files.
+        <li>XMB 1.9.9 - If you are an early adopter of version 1.9.9, then you may migrate to 1.9.11
+            using the same alternative upgrade script that works for 1.9.10, because they share the same schema.  
+        <li>XMB 1.9.8 SP2/SP3 - These versions have reached their end of support and should be upgraded with 1.9.10 or the Normal Upgrade.
+        <li>XMB 1.9.5 - The Normal Upgrade path is recommended for this older version.
+        <li>XMB 1.9.x - It has been determined that upgrading to version 1.9.5 is a prerequisite for upgrading to any newer version.
+        <li>XMB 1.8 - Upgrading to XMB 1.9.1 is a required step in bringing your board current.
 	</ul>
 
-	<strong>Enjoy XMB 1.9.10 Karl!</strong>
+	<strong>Enjoy XMB 1.9.11!</strong>
 </body>
 </html>
