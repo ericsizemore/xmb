@@ -1,0 +1,12 @@
+Index: topicadmin.php
+===================================================================
+--- topicadmin.php	(revision 1515)
++++ topicadmin.php	(working copy)
+@@ -155,6 +155,7 @@
+         nav($lang['textmovemethod1']);
+         break;
+     case 'getip':
++        $kill |= !X_ADMIN;
+         nav($lang['textgetip']);
+         break;
+     case 'bump':
