@@ -1,0 +1,12 @@
+Index: cp2.php
+===================================================================
+--- cp2.php	(revision 1549)
++++ cp2.php	(working copy)
+@@ -1635,6 +1635,7 @@
+     }
+ 
+     if (onSubmit('new')) {
++        $newtemplatename = postedVar('newtemplatename', 'javascript', TRUE, FALSE, TRUE);
+         ?>
+         <tr bgcolor="<?php echo $altbg2?>">
+         <td align="center">
