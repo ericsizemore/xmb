@@ -1,0 +1,18 @@
+Index: files.php
+===================================================================
+--- files.php	(revision 1755)
++++ files.php	(working copy)
+@@ -185,11 +185,11 @@
+ $db->query("UPDATE ".X_PREFIX."attachments SET downloads=downloads+1 WHERE aid=$aid");
+ 
+ // Set response headers
+-$type = strtolower($file['filetype']);
+-$type = ($type == 'text/html') ? 'text/plain' : $type;
+ if ($file['img_size'] == '') {
++    $type = 'application/binary';
+     $dispositionType = 'attachment';
+ } else {
++    $type = strtolower($file['filetype']);
+     $dispositionType = 'inline';
+ }
+ 
