@@ -1,0 +1,95 @@
+Index: xmb19x/trunk/source/templates.xmb
+===================================================================
+--- xmb19x/trunk/source/templates.xmb	(revision 1773)
++++ xmb19x/trunk/source/templates.xmb	(revision 1774)
+@@ -3073,12 +3073,12 @@
+ <td colspan="6" class="category"><font color="$cattext"><strong>$lang[textsortby]</strong></font></td>
+ </tr>
+ <tr class="ctrtablerow">
+-<td bgcolor="$altbg2"><a href="misc.php?action=list&amp;order=username"><strong>$lang[textalpha]</strong></a></td>
+-<td bgcolor="$altbg2"><a href="misc.php?action=list&amp;order=status"><strong>$lang[status]</strong></a></td>
+-<td bgcolor="$altbg2"><a href="misc.php?action=list&amp;order=location"><strong>{$lang['location']}</strong></a></td>
+-<td bgcolor="$altbg2"><a href="misc.php?action=list"><strong>$lang[textregdate]</strong></a></td>
+-<td bgcolor="$altbg2"><a href="misc.php?action=list&amp;order=postnum&amp;desc=desc"><strong>$lang[textpostnum]</strong></a></td>
+-<td bgcolor="$altbg2" width="10%"><a href="misc.php?action=list&amp;desc=$init[ascdesc]$ext"><strong>$ascdesc</strong></a></td>
++<td bgcolor="$altbg2"><a href="misc.php?action=list&amp;order=username$ext"><strong>$lang[textalpha]</strong></a></td>
++<td bgcolor="$altbg2"><a href="misc.php?action=list&amp;order=status$ext"><strong>$lang[status]</strong></a></td>
++<td bgcolor="$altbg2"><a href="misc.php?action=list&amp;order=location$ext"><strong>{$lang['location']}</strong></a></td>
++<td bgcolor="$altbg2"><a href="misc.php?action=list$ext"><strong>$lang[textregdate]</strong></a></td>
++<td bgcolor="$altbg2"><a href="misc.php?action=list&amp;desc=desc&amp;order=postnum$ext"><strong>$lang[textpostnum]</strong></a></td>
++<td bgcolor="$altbg2" width="10%"><a href="misc.php?action=list$sflip$ext"><strong>$ascdesc</strong></a></td>
+ </tr>
+ </table>
+ </td>
+@@ -3125,12 +3125,12 @@
+ <td colspan="6" class="category"><font color="$cattext"><strong>$lang[textsortby]</strong></font></td>
+ </tr>
+ <tr class="ctrtablerow">
+-<td bgcolor="$altbg2"><a href="misc.php?action=list&amp;order=username"><strong>$lang[textalpha]</strong></a></td>
+-<td bgcolor="$altbg2"><a href="misc.php?action=list&amp;order=status"><strong>$lang[status]</strong></a></td>
+-<td bgcolor="$altbg2"><a href="misc.php?action=list&amp;order=location"><strong>{$lang['location']}</strong></a></td>
+-<td bgcolor="$altbg2"><a href="misc.php?action=list"><strong>$lang[textregdate]</strong></a></td>
+-<td bgcolor="$altbg2"><a href="misc.php?action=list&amp;order=postnum&amp;desc=desc"><strong>$lang[textpostnum]</strong></a></td>
+-<td bgcolor="$altbg2" width="10%"><a href="misc.php?action=list&amp;desc=$init[ascdesc]$ext"><strong>$ascdesc</strong></a></td>
++<td bgcolor="$altbg2"><a href="misc.php?action=list&amp;order=username$ext"><strong>$lang[textalpha]</strong></a></td>
++<td bgcolor="$altbg2"><a href="misc.php?action=list&amp;order=status$ext"><strong>$lang[status]</strong></a></td>
++<td bgcolor="$altbg2"><a href="misc.php?action=list&amp;order=location$ext"><strong>{$lang['location']}</strong></a></td>
++<td bgcolor="$altbg2"><a href="misc.php?action=list$ext"><strong>$lang[textregdate]</strong></a></td>
++<td bgcolor="$altbg2"><a href="misc.php?action=list&amp;desc=desc&amp;order=postnum$ext"><strong>$lang[textpostnum]</strong></a></td>
++<td bgcolor="$altbg2" width="10%"><a href="misc.php?action=list$sflip$ext"><strong>$ascdesc</strong></a></td>
+ </tr>
+ </table>
+ </td>
+Index: xmb19x/trunk/source/misc.php
+===================================================================
+--- xmb19x/trunk/source/misc.php	(revision 1773)
++++ xmb19x/trunk/source/misc.php	(revision 1774)
+@@ -426,8 +426,27 @@
+         }
+ 
+         if (count($ext) > 0) {
+-            $ext = '&amp;'.implode('&amp;', $ext);
++            $params = '&amp;'.implode('&amp;', $ext);
++
++            if ($ext[0] == 'desc=desc') {
++                array_shift($ext);
++                $sflip = '';
++            } else {
++                $sflip = '&amp;desc=desc';
++            }
++            if (count($ext) > 0) {
++                if (substr($ext[0], 0, 6) == 'order=') {
++                    $sflip .= '&amp;'.array_shift($ext);
++                }
++            }
++            if (count($ext) > 0) {
++                $ext = '&amp;'.implode('&amp;', $ext);
++            } else {
++                $ext = '';
++            }
+         } else {
++            $params = '';
++            $sflip = '&amp;desc=desc';
+             $ext = '';
+         }
+ 
+@@ -435,7 +454,7 @@
+         $q = implode(' AND', $where);
+         $num = $db->result($db->query("SELECT COUNT(uid) FROM ".X_PREFIX."members WHERE $q"), 0);
+         $canonical = 'misc.php?action=list';
+-        $baseurl = $canonical.$ext;
++        $baseurl = $canonical.$params;
+         $mpage = multipage($num, $memberperpage, $baseurl, $canonical);
+         $multipage =& $mpage['html'];
+         if (strlen($mpage['html']) != 0) {
+@@ -493,10 +512,8 @@
+         }
+ 
+         if (strtolower($desc) == 'desc') {
+-            $init['ascdesc'] = 'asc';
+             $ascdesc = $lang['asc'];
+         } else {
+-            $init['ascdesc'] = 'desc';
+             $ascdesc = $lang['desc'];
+         }
+         eval('$memlist = "'.template($misc_mlist_template).'";');
