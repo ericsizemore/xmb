@@ -1,0 +1,43 @@
+Index: member.php
+===================================================================
+--- member.php	(revision 1797)
++++ member.php	(revision 1798)
+@@ -761,7 +761,7 @@
+         if ($memberinfo['bday'] === iso8601_date(0,0,0)) {
+             $memberinfo['bday'] = $lang['textnone'];
+         } else {
+-            $memberinfo['bday'] = gmdate($dateformat, gmmktime(12,0,0,substr($memberinfo['bday'],5,2),substr($memberinfo['bday'],8,2),substr($memberinfo['bday'],0,4)));
++            $memberinfo['bday'] = printGmDate(MakeTime(12,0,0,substr($memberinfo['bday'],5,2),substr($memberinfo['bday'],8,2),substr($memberinfo['bday'],0,4)));
+         }
+ 
+         // Forum most active in
+Index: include/functions.inc.php
+===================================================================
+--- include/functions.inc.php	(revision 1797)
++++ include/functions.inc.php	(revision 1798)
+@@ -1557,14 +1557,14 @@
+ }
+ 
+ function printGmDate($timestamp=null, $altFormat=null, $altOffset=0) {
+-    global $self, $SETTINGS, $timeoffset, $addtime;
++    global $dateformat, $SETTINGS, $timeoffset, $addtime;
+ 
+     if ($timestamp === null) {
+         $timestamp = time();
+     }
+ 
+     if ($altFormat === null) {
+-        $altFormat = $self['dateformat'];
++        $altFormat = $dateformat;
+     }
+ 
+     $f = false;
+@@ -1632,7 +1632,7 @@
+        }
+    }
+ 
+-   return call_user_func_array("mktime", $objArgs) + $nOffset;
++   return call_user_func_array("gmmktime", $objArgs) + $nOffset;
+ }
+ 
+ function iso8601_date($year=0, $month=0, $day=0) {
