@@ -19,14 +19,14 @@ Index: include/functions.inc.php
      }
  
      $f = false;
-@@ -1597,19 +1597,18 @@
+@@ -1597,21 +1597,18 @@
     $objArgs = func_get_args();
     $nCount = count($objArgs);
     if ($nCount < 7) {
 -       $objDate = getdate();
         if ($nCount < 1) {
 -           $objArgs[] = $objDate['hours'];
-+           $objArgs[] = intval(gmdate('G'));
++           $objArgs[] = intval(gmdate('H'));
         } else if ($nCount < 2) {
 -           $objArgs[] = $objDate['minutes'];
 +           $objArgs[] = intval(gmdate('i'));
@@ -41,11 +41,22 @@ Index: include/functions.inc.php
 +           $objArgs[] = intval(gmdate('j'));
         } else if ($nCount < 6) {
 -           $objArgs[] = $objDate['year'];
+-       } else if ($nCount < 7) {
+-           $objArgs[] = -1;
 +           $objArgs[] = intval(gmdate('Y'));
-        } else if ($nCount < 7) {
-            $objArgs[] = -1;
         }
-@@ -1632,7 +1631,7 @@
+    }
+ 
+@@ -1623,16 +1620,13 @@
+        } else if ($nYear < 1952) {
+            $nOffset = -2650838400;
+            $objArgs[5] += 84;
+-           if ($nYear < 1942) {
+-               $objArgs[6] = 0;
+-           }
+        } else {
+            $nOffset = -883612800;
+            $objArgs[5] += 28;
         }
     }
  
