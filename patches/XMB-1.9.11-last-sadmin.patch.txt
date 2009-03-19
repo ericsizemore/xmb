@@ -1,0 +1,79 @@
+Index: cp.php
+===================================================================
+--- cp.php	(revision 1806)
++++ cp.php	(working copy)
+@@ -1728,9 +1728,15 @@
+                 } else {
+                     $pending = '';
+                 }
++                
++                if ($member['status'] == 'Super Administrator') {
++                    $disabledelete = ' disabled="disabled"';
++                } else {
++                    $disabledelete = '';
++                }
+                 ?>
+                 <tr bgcolor="<?php echo $altbg2?>" class="tablerow">
+-                <td align="center"><input type="checkbox" name="delete<?php echo $member['uid']?>" onclick="addUserDel(<?php echo $member['uid']?>, '<?php echo $member['username']?>', this)" value="<?php echo $member['uid']?>" /></td>
++                <td align="center"><input type="checkbox" name="delete<?php echo $member['uid']?>" onclick="addUserDel(<?php echo $member['uid']?>, '<?php echo $member['username']?>', this)" value="<?php echo $member['uid']?>"<?php echo $disabledelete; ?> /></td>
+                 <td><a href="member.php?action=viewpro&amp;member=<?php echo recodeOut($member['username']); ?>"><?php echo $member['username']?></a>
+                 <?php if (X_SADMIN) { ?>
+                 <br /><a href="editprofile.php?user=<?php echo recodeOut($member['username']); ?>"><strong><?php echo $lang['admin_edituseraccount']; ?></strong></a>
+@@ -1777,12 +1783,26 @@
+             <?php
+         }
+     } else if (onSubmit('membersubmit')) {
+-        $query = $db->query("SELECT MIN(uid) FROM ".X_PREFIX."members WHERE status='Super Administrator'");
+-        $sa_uid = $db->result($query, 0);
+-        $db->free_result($query);
+-
+         $query = $db->query("SELECT uid, username, password, status FROM ".X_PREFIX."members $where");
+ 
++        // Guarantee this request will not remove all Super Administrators.
++        if (X_SADMIN And $db->num_rows($query) > 0) {
++            $saquery = $db->query("SELECT COUNT(uid) FROM ".X_PREFIX."members WHERE status='Super Administrator'");
++            $sa_count = $db->result($saquery, 0);
++            $db->free_result($saquery);
++
++            while($mem = $db->fetch_array($query)) {
++                if ($mem['status'] == 'Super Administrator' And postedVar('status'.$mem['uid']) != 'Super Administrator') {
++                    $sa_count--;
++                }
++            }
++            if ($sa_count < 1) {
++                error($lang['lastsadmin'], false, '</td></tr></table></td></tr></table><br />');
++            }
++            $db->data_seek($query, 0);
++        }
++
++        // Now execute this request
+         while($mem = $db->fetch_array($query)) {
+             $origstatus = $mem['status'];
+             $status = postedVar('status'.$mem['uid']);
+@@ -1807,7 +1827,7 @@
+                 }
+             }
+ 
+-            if ($delete == $mem['uid'] && $delete != $self['uid'] && $delete != $sa_uid) {
++            if ($delete == $mem['uid'] && $delete != $self['uid'] && $origstatus != "Super Administrator") {
+                 $dbname = $db->escape_var($mem['username']);
+                 $db->query("DELETE FROM ".X_PREFIX."members WHERE uid=$delete");
+                 $db->query("DELETE FROM ".X_PREFIX."buddys WHERE username='$dbname'");
+Index: editprofile.php
+===================================================================
+--- editprofile.php	(revision 1806)
++++ editprofile.php	(working copy)
+@@ -226,6 +226,13 @@
+     eval('$editpage = "'.template('admintool_editprofile').'";');
+ } else {
+     $status = postedVar('status');
++    $origstatus = $member['status'];
++    $query = $db->query("SELECT COUNT(uid) FROM ".X_PREFIX."members WHERE status='Super Administrator'");
++    $sa_count = $db->result($query, 0);
++    $db->free_result($query);
++    if ($origstatus == 'Super Administrator' And $status != 'Super Administrator' And $sa_count == 1) {
++        error($lang['lastsadmin']);
++    }
+     $cusstatus = postedVar('cusstatus', '', FALSE);
+     $langfilenew = postedVar('langfilenew');
+     $result = $db->query("SELECT devname FROM ".X_PREFIX."lang_base WHERE devname='$langfilenew'");
