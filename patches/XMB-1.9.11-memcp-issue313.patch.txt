@@ -1,0 +1,63 @@
+Index: memcp.php
+===================================================================
+--- memcp.php	(revision 1745)
++++ memcp.php	(working copy)
+@@ -597,10 +597,11 @@
+     }
+ 
+     if (!$favadd && noSubmit('favsubmit')) {
++        $favnum = 0;
++        $favs = '';
+         $fids = permittedForums(forumCache(), 'thread', 'csv');
++        if (strlen($fids) != 0) {
+         $query = $db->query("SELECT f.*, t.fid, t.icon, t.lastpost, t.subject, t.replies FROM ".X_PREFIX."favorites f INNER JOIN ".X_PREFIX."threads t USING (tid) WHERE f.username='$xmbuser' AND f.type='favorite' AND t.fid IN ($fids) ORDER BY t.lastpost DESC");
+-        $favnum = 0;
+-        $favs = '';
+         $tmOffset = ($timeoffset * 3600) + ($addtime * 3600);
+         while($fav = $db->fetch_array($query)) {
+             $forum = getForum($fav['fid']);
+@@ -623,6 +624,8 @@
+             $favnum++;
+             eval('$favs .= "'.template('memcp_favs_row').'";');
+         }
++        $db->free_result($query);
++        }
+ 
+         $favsbtn = '';
+         if ($favnum != 0) {
+@@ -632,7 +635,6 @@
+         if ($favnum == 0) {
+             eval('$favs = "'.template('memcp_favs_none').'";');
+         }
+-        $db->free_result($query);
+         eval('$mempage = "'.template('memcp_favs').'";');
+     }
+ 
+@@ -810,10 +812,12 @@
+     }
+     $db->free_result($u2uquery);
+ 
++    $favnum = 0;
++    $favs = '';
+     $fids = permittedForums(forumCache(), 'thread', 'csv');
++    if (strlen($fids) != 0) {
+     $query2 = $db->query("SELECT t.tid, t.fid, t.lastpost, t.subject, t.icon, t.replies FROM ".X_PREFIX."favorites f INNER JOIN ".X_PREFIX."threads t USING (tid) WHERE f.username='$xmbuser' AND f.type='favorite' AND t.fid IN ($fids) ORDER BY t.lastpost DESC LIMIT 0,5");
+     $favnum = $db->num_rows($query2);
+-    $favs = '';
+     $tmOffset = ($timeoffset * 3600) + ($addtime * 3600);
+     while($fav = $db->fetch_array($query2)) {
+         $forum = getForum($fav['fid']);
+@@ -834,11 +838,12 @@
+         }
+         eval('$favs .= "'.template('memcp_home_favs_row').'";');
+     }
++    $db->free_result($query2);
++    }
+ 
+     if ($favnum == 0) {
+         eval('$favs = "'.template('memcp_home_favs_none').'";');
+     }
+-    $db->free_result($query2);
+     eval('$mempage = "'.template('memcp_home').'";');
+ }
+ 
