@@ -1,0 +1,166 @@
+Index: memcp.php
+===================================================================
+--- memcp.php	(revision 1745)
++++ memcp.php	(working copy)
+@@ -597,10 +597,11 @@
+     }
+ 
+     if (!$favadd && noSubmit('favsubmit')) {
++        $favnum = 0;
++        $favs = '';
+         $fids = permittedForums(forumCache(), 'thread', 'csv');
++        if (strlen($fids) != 0) {
+         $query = $db->query("SELECT f.*, t.fid, t.icon, t.lastpost, t.subject, t.replies FROM ".X_PREFIX."favorites f INNER JOIN ".X_PREFIX."threads t USING (tid) WHERE f.username='$xmbuser' AND f.type='favorite' AND t.fid IN ($fids) ORDER BY t.lastpost DESC");
+-        $favnum = 0;
+-        $favs = '';
+         $tmOffset = ($timeoffset * 3600) + ($addtime * 3600);
+         while($fav = $db->fetch_array($query)) {
+             $forum = getForum($fav['fid']);
+@@ -623,6 +624,8 @@
+             $favnum++;
+             eval('$favs .= "'.template('memcp_favs_row').'";');
+         }
++        $db->free_result($query);
++        }
+ 
+         $favsbtn = '';
+         if ($favnum != 0) {
+@@ -632,7 +635,6 @@
+         if ($favnum == 0) {
+             eval('$favs = "'.template('memcp_favs_none').'";');
+         }
+-        $db->free_result($query);
+         eval('$mempage = "'.template('memcp_favs').'";');
+     }
+ 
+@@ -810,10 +812,12 @@
+     }
+     $db->free_result($u2uquery);
+ 
++    $favnum = 0;
++    $favs = '';
+     $fids = permittedForums(forumCache(), 'thread', 'csv');
++    if (strlen($fids) != 0) {
+     $query2 = $db->query("SELECT t.tid, t.fid, t.lastpost, t.subject, t.icon, t.replies FROM ".X_PREFIX."favorites f INNER JOIN ".X_PREFIX."threads t USING (tid) WHERE f.username='$xmbuser' AND f.type='favorite' AND t.fid IN ($fids) ORDER BY t.lastpost DESC LIMIT 0,5");
+     $favnum = $db->num_rows($query2);
+-    $favs = '';
+     $tmOffset = ($timeoffset * 3600) + ($addtime * 3600);
+     while($fav = $db->fetch_array($query2)) {
+         $forum = getForum($fav['fid']);
+@@ -834,11 +838,12 @@
+         }
+         eval('$favs .= "'.template('memcp_home_favs_row').'";');
+     }
++    $db->free_result($query2);
++    }
+ 
+     if ($favnum == 0) {
+         eval('$favs = "'.template('memcp_home_favs_none').'";');
+     }
+-    $db->free_result($query2);
+     eval('$mempage = "'.template('memcp_home').'";');
+ }
+ 
+Index: include/online.inc.php
+===================================================================
+--- include/online.inc.php	(revision 1745)
++++ include/online.inc.php	(working copy)
+@@ -37,7 +37,11 @@
+ 
+     if ($restrict == '') {
+         $fids = permittedForums(forumCache(), 'thread', 'csv');
+-        $restrict = ' f.fid IN('.$fids.')';
++        if (strlen($fids) == 0) {
++            $restrict = ' FALSE';
++        } else {
++            $restrict = ' f.fid IN('.$fids.')';
++        }
+     }
+ 
+     if (false !== strpos($url, '/viewthread.php')) {
+Index: search.php
+===================================================================
+--- search.php	(revision 1745)
++++ search.php	(working copy)
+@@ -152,7 +152,6 @@
+     $sql = "SELECT p.*, t.subject AS tsubject "
+          . "FROM ".X_PREFIX."posts AS p INNER JOIN ".X_PREFIX."threads AS t USING(tid) INNER JOIN ".X_PREFIX."forums AS f ON f.fid=t.fid "
+          . "WHERE f.fid IN($forums)";
+-    unset($forums);
+ 
+     if ($srchfrom <= 0) {
+         $srchfrom = $onlinetime;
+@@ -203,14 +202,17 @@
+ 
+     $sql .=" ORDER BY dateline DESC LIMIT $start, $ppp";
+ 
++    if (strlen($forums) == 0) {
++        $results = 0;
++    } else {
+     $querysrch = $db->query($sql);
+-    $results = 0;
+     $results = $db->num_rows($querysrch);
++    }
+ 
+     $temparray = array();
+     $searchresults = '';
+ 
+-    while($post = $db->fetch_array($querysrch)) {
++    while($results != 0 And $post = $db->fetch_array($querysrch)) {
+         if ($filter_distinct != 'yes' Or !array_key_exists($post['tid'], $temparray)) {
+             $temparray[$post['tid']] = true;
+             $message = stripslashes($post['message']);
+Index: stats.php
+===================================================================
+--- stats.php	(revision 1745)
++++ stats.php	(working copy)
+@@ -45,7 +45,11 @@
+ eval('$header = "'.template('header').'";');
+ 
+ $fids = permittedForums(forumCache(), 'thread', 'csv');
+-$restrict = ' fid IN ('.$fids.')';
++if (strlen($fids) == 0) {
++    $restrict = ' FALSE';
++} else {
++    $restrict = ' fid IN ('.$fids.')';
++}
+ 
+ $query = $db->query("SELECT COUNT(uid) FROM ".X_PREFIX."members UNION ALL SELECT COUNT(tid) FROM ".X_PREFIX."threads UNION ALL SELECT COUNT(pid) FROM ".X_PREFIX."posts");
+ $members = $db->result($query, 0);
+@@ -149,10 +153,14 @@
+ $db->free_result($query);
+ 
+ // Get most popular forum
++if (strlen($fids) == 0) {
++    $popforum = $lang['textnoforumsexist'];
++} else {
+ $query = $db->query("SELECT posts, threads, fid, name FROM ".X_PREFIX."forums WHERE $restrict AND (type='sub' OR type='forum') AND status='on' ORDER BY posts DESC LIMIT 0, 1");
+ $pop = $db->fetch_array($query);
+ $popforum = '<a href="forumdisplay.php?fid='.intval($pop['fid']).'"><strong>'.fnameOut($pop['name']).'</strong></a>';
+ $db->free_result($query);
++}
+ 
+ // Get amount of posts per day
+ $postsday = number_format($posts / $days, 2);
+Index: today.php
+===================================================================
+--- today.php	(revision 1745)
++++ today.php	(working copy)
+@@ -55,6 +55,9 @@
+ $tids = array();
+ $fids = permittedForums(forumCache(), 'thread', 'csv');
+ 
++if (strlen($fids) == 0) {
++    $results = 0;
++} else {
+ $query = $db->query("SELECT tid FROM ".X_PREFIX."threads WHERE lastpost >= '$srchfrom' AND fid IN ($fids)");
+ $results = $db->num_rows($query);
+ while($t = $db->fetch_array($query)) {
+@@ -62,6 +65,7 @@
+ }
+ $db->free_result($query);
+ $tids = implode(', ', $tids);
++}
+ 
+ eval('$css = "'.template('css').'";');
+ 
