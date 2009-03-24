@@ -1,0 +1,147 @@
+Index: attach-admin.inc.php
+===================================================================
+--- attach-admin.inc.php	(revision 1830)
++++ attach-admin.inc.php	(working copy)
+@@ -50,6 +50,9 @@
+     }
+     $attachment = $db->escape(file_get_contents($path));
+     $db->query("UPDATE ".X_PREFIX."attachments SET subdir='', attachment='$attachment' WHERE aid=$aid AND pid=$pid");
++    if ($db->affected_rows() !== 1) {
++        return FALSE;
++    }
+     unlink($path);
+ }
+ 
+@@ -57,7 +60,9 @@
+     global $db;
+     $aid = intval($aid);
+     $pid = intval($pid);
+-    $query = $db->query("SELECT *, UNIX_TIMESTAMP(updatetime) AS updatestamp FROM ".X_PREFIX."attachments WHERE aid=$aid AND pid=$pid");
++    $query = $db->query("SELECT a.*, UNIX_TIMESTAMP(a.updatetime) AS updatestamp, p.dateline "
++                      . "FROM ".X_PREFIX."attachments AS a LEFT JOIN ".X_PREFIX."posts AS p USING (pid) "
++                      . "WHERE a.aid=$aid AND a.pid=$pid");
+     if ($db->num_rows($query) != 1) {
+         return FALSE;
+     }
+@@ -65,15 +70,20 @@
+     if ($attach['subdir'] != '' Or strlen($attach['attachment']) != $attach['filesize']) {
+         return FALSE;
+     }
++    if (intval($attach['updatestamp']) == 0 And intval($attach['dateline']) > 0) {
++        $attach['updatestamp'] = $attach['dateline'];
++    }
+     $subdir = getNewSubdir($attach['updatestamp']);
+-    $path = getFullPathFromSubdir($subdir);
+-    if (!is_dir($path)) {
+-        mkdir($path, 0777, TRUE);
+-    }
++    $path = getFullPathFromSubdir($subdir, TRUE);
+     $newfilename = $aid;
+     $path .= $newfilename;
+     $file = fopen($path, 'wb');
+-    fwrite($file, $attach['attachment']);
++    if ($file === FALSE) {
++        return FALSE;
++    }
++    if (fwrite($file, $attach['attachment']) != $attach['filesize']) {
++        return FALSE;
++    }
+     fclose($file);
+     $db->query("UPDATE ".X_PREFIX."attachments SET subdir='$subdir', attachment='' WHERE aid=$aid AND pid=$pid");
+ }
+Index: attach.inc.php
+===================================================================
+--- attach.inc.php	(revision 1830)
++++ attach.inc.php	(working copy)
+@@ -193,6 +193,9 @@
+ 
+     // Write to disk
+     $handle = fopen($filepath, 'wb');
++    if ($handle === FALSE) {
++        return X_NO_TEMP_FILE;
++    }
+     fwrite($handle, $file);
+     fclose($handle);
+ 
+@@ -631,10 +634,10 @@
+     if ($path !== FALSE) {
+         $filepath = tempnam($path, 'xmb-');
+     }
+-    if ($filepath === FALSE) {
++    if (!is_writable($filepath)) {
+         $filepath = tempnam('', 'xmb-');
+     }
+-    if ($filepath === FALSE) {
++    if (!is_writable($filepath)) {
+         header('HTTP/1.0 500 Internal Server Error');
+         exit($attachmentErrors[X_NO_TEMP_FILE]);
+     }
+@@ -803,6 +806,9 @@
+             $path .= $newfilename;
+         }
+         $file = fopen($path, 'wb');
++        if ($file === FALSE) {
++            return FALSE;
++        }
+         fwrite($file, $attach['attachment']);
+         fclose($file);
+         unset($attach['attachment']);
+Index: functions.inc.php
+===================================================================
+--- functions.inc.php	(revision 1830)
++++ functions.inc.php	(working copy)
+@@ -1497,8 +1497,12 @@
+                 $mail = new socket_SMTP;
+             }
+             $handlers['socket_SMTP'] = &$mail;
+-            $mail->connect($mailer['host'], $mailer['port'], $mailer['username'], $mailer['password']);
++            if (!$mail->connect($mailer['host'], $mailer['port'], $mailer['username'], $mailer['password'])) {
++                return FALSE;
++            }
+             register_shutdown_function(array(&$mail, 'disconnect'));
++        } elseif ($mail->connection === FALSE) {
++            return FALSE;
+         } else {
+             $mail = &$handlers['socket_SMTP'];
+         }
+Index: smtp.inc.php
+===================================================================
+--- smtp.inc.php	(revision 1830)
++++ smtp.inc.php	(working copy)
+@@ -32,16 +32,14 @@
+ 
+ class socket_SMTP {
+     function socket_SMTP($debug=false, $dbFile='') {
+-        $this->__construct($debug, $dbFile);
+-    }
+-
+-    function __construct($debug=false, $dbFile='') {
+         $this->connection   = null;
+         if ($debug) {
+             $this->debugStream = fopen($dbFile, 'a+');
++            if ($this->debugStream !== FALSE) {
+             $l = 'SMTP loaded ('.date('r', time()).')'."\n";
+             fwrite($this->debugStream, $l, strlen($l));
+             $this->debug = true;
++            }
+         }
+     }
+ 
+@@ -61,7 +59,7 @@
+         socket_set_blocking($this->connection, true);
+ 
+         $this->get();
+-        $this->send('EHLO');
++        $this->send('EHLO '.substr($_SERVER['HTTP_HOST'], 0, strcspn($_SERVER['HTTP_HOST'], ':')));
+ 
+         $s = $this->get();
+         if (!$this->isOk($s)) {
+@@ -69,7 +67,7 @@
+         }
+         $parts = explode("\r\n", $s);
+         foreach($parts as $ns) {
+-            if (substr($ns, 0, 8) == '250-AUTH') {
++            if (substr($ns, 0, 3) == '250' And substr($ns, 4, 4) == 'AUTH') {
+                 $authAvailable = true;
+                 $methods = substr($ns, 8);
+                 $methods = explode(' ', trim($methods));
