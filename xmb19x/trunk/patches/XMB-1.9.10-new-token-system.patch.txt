@@ -1,0 +1,950 @@
+Index: include/captcha.inc.php
+===================================================================
+--- include/captcha.inc.php	(revision 2508)
++++ include/captcha.inc.php	(revision 2511)
+@@ -1,7 +1,7 @@
+ <?php
+ /**
+  * eXtreme Message Board
+- * XMB 1.9.10 Karl // 7 August 2008 Security Patch
++ * XMB 1.9.10 Karl // 11 February 2011 Security Patch
+  *
+  * Developed And Maintained By The XMB Group
+  * Copyright (c) 2001-2008, The XMB Group
+@@ -315,11 +315,6 @@
+     }
+ 
+     function GenerateCode() {
+-        global $db, $onlinetime;
+-
+-        $this->bPoison = TRUE;
+-
+-        $db->query('DELETE FROM '.X_PREFIX.'captchaimages WHERE dateline < '.(time() - 86400));
+         // loop through and generate the code letter by letter
+         for($i = 0; $i < $this->iNumChars; $i++) {
+             if (count($this->aCharSet) >= $this->iNumChars) {
+@@ -331,38 +326,23 @@
+             }
+         }
+ 
+-        // save code in DB and return image hash.
+-        $time = $onlinetime;
+-
+         if ($this->bCaseInsensitive) {
+-            $imagehash = md5(strtoupper($this->sCode));
+-        } else {
+-            $imagehash = md5($this->sCode);
++            $this->sCode = strtoupper($this->sCode);
+         }
+ 
+-        $db->query("INSERT INTO ".X_PREFIX."captchaimages (imagehash, imagestring, dateline) VALUES ('$imagehash', '$this->sCode', '$time')");
+-        return $imagehash;
++        // XMB saves code in DB and returns hashed code.
++        $this->bPoison = TRUE;
++
++        return nonce_create($this->sCode);
+     }
+ 
+     function RetrieveCode($imghash) {
+-        global $db;
+-        // check imagehash
+         if ($imghash == 'test') {
+-            $imgCode = 'CaPtChA';
++            $this->bPoison = TRUE;
++            $this->sCode = 'CaPtChA';
+         } else {
+-            $query = $db->query("SELECT * FROM ".X_PREFIX."captchaimages WHERE imagehash='$imghash'");
+-            if ($db->num_rows($query) !== 1) {
+-                $bPoison = TRUE;
+-                return FALSE;
+-            }
+-            $captchaimage = $db->fetch_array($query);
+-            $db->free_result($query);
+-            $imgCode = $captchaimage['imagestring'];
++            $this->sCode = nonce_peek($imghash, $this->iNumChars);
+         }
+-
+-        // reset code
+-        $this->sCode = $imgCode;
+-        return $imgCode;
+     }
+ 
+     function DrawCharacters($bg_lum, $colors) {
+@@ -511,38 +491,21 @@
+ 
+     // call this method statically
+     function ValidateCode($sUserCode, $imghash) {
+-        global $db;
+-
+         if ($this->bPoison) {
+             return FALSE;
+         }
+ 
+-        if (strlen($sUserCode) != CAPTCHA_NUM_CHARS Or $imghash == 'test') {
+-            $this->bPoison = TRUE;
+-            return FALSE;
+-        }
++        $this->bPoison = TRUE;
+ 
+-        $this->RetrieveCode($imghash);
+-
+-        if ($this->bPoison) {
++        if (strlen($sUserCode) != $this->iNumChars or $imghash == 'test') {
+             return FALSE;
+         }
+ 
+-        $this->bPoison = TRUE;
+-
+         if ($this->bCaseInsensitive) {
+             $sUserCode = strtoupper($sUserCode);
+-            $this->sCode = strtoupper($this->sCode);
+         }
+ 
+-        if ($sUserCode == $this->sCode) {
+-            // clear to prevent re-use
+-            $db->query("DELETE FROM ".X_PREFIX."captchaimages WHERE imagehash='$imghash'");
+-            if (mysql_affected_rows($db->link) === 1) {
+-                return TRUE;
+-            }
+-        }
+-        return FALSE;
++        return nonce_use($sUserCode, $imghash);
+     }
+ 
+     function CheckCompatibility() {
+Index: include/functions.inc.php
+===================================================================
+--- include/functions.inc.php	(revision 2508)
++++ include/functions.inc.php	(revision 2511)
+@@ -253,6 +253,57 @@
+     }
+ }
+ 
++/**
++ * Get a template with the token filled in.
++ *
++ * @param string $name The template name.
++ * @param string $action The action for which the token is valid.
++ * @param string $id The object for which the token is valid.
++ * @return string
++ */
++function template_secure($name, $action, $id) {
++    $key = template_key($action, $id);
++    $nonce = nonce_create($key);
++    $placeholder = '<input type="hidden" name="token" value="$oToken->newToken" />';
++    $replace = '<input type="hidden" name="token" value="'.$nonce.'" />';
++    return str_replace(addslashes($placeholder), addslashes($replace), template($name));
++}
++
++/**
++ * Assert token validity for a user request.
++ *
++ * @param string $action The action for which the token is valid.
++ * @param string $id The object for which the token is valid.
++ * @param int    $expire Number of seconds for which the token was valid.
++ * @param bool   $error_header Display header template on errors?
++ */
++function request_secure($action, $id, $expire, $error_header = TRUE) {
++    global $lang;
++
++    $key = template_key($action, $id);
++    $nonce = postedVar('token');
++    if (!nonce_use($key, $nonce, $expire)) {
++        error($lang['noadminsession'], $error_header);
++    }
++}
++
++/**
++ * Make a key for the nonce/key pair.
++ *
++ * @param string $action The action for which the token is valid.
++ * @param string $id The object for which the token is valid.
++ * @return string
++ */
++function template_key($action, $id) {
++    $id_len = X_NONCE_KEY_LEN - strlen($action);
++    if (strlen($id) > $id_len) {
++        $id = substr($id, -$id_len);
++    } else {
++        $id = str_pad($id, $id_len, '0', STR_PAD_LEFT);
++    }
++    return $action . $id;
++}
++
+ function censor($txt) {
+     global $censorcache;
+ 
+@@ -1803,4 +1854,77 @@
+         error($lang['forumpwinfo'], true, '', $pwform, false, true, false, true);
+     }
+ }
++
++/**
++ * Generate a nonce.
++ *
++ * The XMB schema is currently limited to a 12-byte key length, and as such
++ * does not offer user uniqueness beyond simple randomization.
++ *
++ * @param string $key The known value, such as what the nonce may be used for.
++ * @param string $salt A semi-secret value such as the id of the current user.
++ * @return string
++ */
++function nonce_create($key) {
++    global $db, $self;
++
++    $key = $db->escape(substr($key, 0, X_NONCE_KEY_LEN));
++    $salt = isset($self['email']) ? $self['email'] : $key;
++    $nonce = md5( $salt . mt_rand() );
++    $time = time();
++    $db->query("INSERT INTO ".X_PREFIX."captchaimages (imagehash, imagestring, dateline) VALUES ('$nonce', '$key', '$time')");
++
++    return $nonce;
++}
++
++/**
++ * Reveal the nonce/key pair to the user, as in CAPTCHA.
++ *
++ * @param  string $nonce The user input.
++ * @param  int    $key_length The known length of the key.
++ * @return string The key value.
++ */
++function nonce_peek($nonce, $key_length) {
++    global $db;
++
++    $key_length = (int) $key_length;
++    if ($key_length >= X_NONCE_KEY_LEN) return '';  //Since the schema is so constrained, keep all the 12-byte keys secure.
++
++    $nonce = $db->escape($nonce);
++    $time = time() - X_NONCE_MAX_AGE;
++    $result = $db->query(
++        "SELECT imagestring
++         FROM ".X_PREFIX."captchaimages
++         WHERE imagehash='$nonce' AND dateline >= $time AND LENGTH(imagestring) = $key_length"
++    );
++    if ($db->num_rows($result) === 1) {
++        return $db->result($result, 0);
++    }
++    return '';
++}
++
++/**
++ * Test a nonce.
++ *
++ * @param string $key The same value used in nonce_create().
++ * @param string $nonce The user input.
++ * @param int    $expire Optional. Number of seconds for which any nonce having the same $key will be valid.
++ * @return bool True only if the user provided a unique nonce for the key/nonce pair.
++ */
++function nonce_use($key, $nonce, $expire = 0) {
++    global $db;
++
++    $key = $db->escape(substr($key, 0, X_NONCE_KEY_LEN));
++    $nonce = $db->escape($nonce);
++    $time = time() - X_NONCE_MAX_AGE;
++    $sql_expire = "dateline < $time";
++    if ($expire > 0 and $expire < X_NONCE_MAX_AGE) {
++        $time = time() - $expire;
++        $sql_expire .= " OR imagestring='$key' AND dateline < $time";
++    }
++    $db->query("DELETE FROM ".X_PREFIX."captchaimages WHERE $sql_expire");
++    $db->query("DELETE FROM ".X_PREFIX."captchaimages WHERE imagehash='$nonce' AND imagestring='$key'");
++
++    return (mysql_affected_rows($db->link) === 1);
++}
+ ?>
+Index: tools.php
+===================================================================
+--- tools.php	(revision 2508)
++++ tools.php	(revision 2511)
+@@ -321,8 +321,16 @@
+ 
+     case 'u2udump':
+         if (noSubmit('yessubmit')) {
+-            echo '<tr bgcolor="'.$altbg2.'" class="ctrtablerow"><td>'.$lang['u2udump_confirm'].'<br /><form action="tools.php?action=u2udump" method="post"><input type="submit" name="yessubmit" value="'.$lang['textyes'].'" /> - <input type="submit" name="yessubmit" value="'.$lang['textno'].'" /></form></td></tr>';
++            ?>
++            <tr bgcolor="<?php echo $altbg2; ?>" class="ctrtablerow"><td><?php echo $lang['u2udump_confirm']; ?><br />
++            <form action="tools.php?action=u2udump" method="post">
++              <input type="hidden" name="token" value="<?php echo nonce_create('truncateu2us'); ?>" />
++              <input type="submit" name="yessubmit" value="<?php echo $lang['textyes']; ?>" /> -
++              <input type="submit" name="yessubmit" value="<?php echo $lang['textno']; ?>" />
++            </form></td></tr>
++            <?php
+         } else if ($lang['textyes'] == $yessubmit) {
++            request_secure('truncateu2us', '', X_NONCE_AYS_EXP, FALSE);
+             $db->query("TRUNCATE ".X_PREFIX."u2u");
+             nav($lang['tools']);
+             echo '<tr bgcolor="'.$altbg2.'" class="ctrtablerow"><td>'.$lang['tool_completed'].' - '.$lang['tool_u2u'].'</td></tr></table></table>';
+@@ -336,8 +344,16 @@
+ 
+     case 'whosonlinedump':
+         if (noSubmit('yessubmit')) {
+-            echo '<tr bgcolor="'.$altbg2.'" class="ctrtablerow"><td>'.$lang['whoodump_confirm'].'<br /><form action="tools.php?action=whosonlinedump" method="post"><input type="submit" name="yessubmit" value="'.$lang['textyes'].'" /> - <input type="submit" name="yessubmit" value="'.$lang['textno'].'" /></form></td></tr>';
++            ?>
++            <tr bgcolor="<?php echo $altbg2; ?>" class="ctrtablerow"><td><?php echo $lang['whoodump_confirm']; ?><br />
++            <form action="tools.php?action=whosonlinedump" method="post">
++              <input type="hidden" name="token" value="<?php echo nonce_create('truncatewhos'); ?>" />
++              <input type="submit" name="yessubmit" value="<?php echo $lang['textyes']; ?>" /> -
++              <input type="submit" name="yessubmit" value="<?php echo $lang['textno']; ?>" />
++            </form></td></tr>
++            <?php
+         } else if ($lang['textyes'] == $yessubmit) {
++            request_secure('truncatewhos', '', X_NONCE_AYS_EXP, FALSE);
+             $db->query("TRUNCATE ".X_PREFIX."whosonline");
+             nav($lang['tools']);
+             echo '<tr bgcolor="'.$altbg2.'" class="ctrtablerow"><td>'.$lang['tool_completed'].' - '.$lang['tool_whosonline'].'</td></tr></table></table>';
+@@ -355,8 +371,16 @@
+         }
+ 
+         if (noSubmit('yessubmit')) {
+-            echo '<tr bgcolor="'.$altbg2.'" class="ctrtablerow"><td>'.$lang['logsdump_confirm'].'<br /><form action="tools.php?action=logsdump" method="post"><input type="submit" name="yessubmit" value="'.$lang['textyes'].'" /> - <input type="submit" name="yessubmit" value="'.$lang['textno'].'" /></form></td></tr>';
++            ?>
++            <tr bgcolor="<?php echo $altbg2; ?>" class="ctrtablerow"><td><?php echo $lang['logsdump_confirm']; ?><br />
++            <form action="tools.php?action=logsdump" method="post">
++              <input type="hidden" name="token" value="<?php echo nonce_create('deletecplogs'); ?>" />
++              <input type="submit" name="yessubmit" value="<?php echo $lang['textyes']; ?>" /> -
++              <input type="submit" name="yessubmit" value="<?php echo $lang['textno']; ?>" />
++            </form></td></tr>
++            <?php
+         } else if ($lang['textyes'] == $yessubmit) {
++            request_secure('deletecplogs', '', X_NONCE_AYS_EXP, FALSE);
+             $db->query("TRUNCATE ".X_PREFIX."logs");
+             nav($lang['tools']);
+             echo '<tr bgcolor="'.$altbg2.'" class="ctrtablerow"><td>'.$lang['tool_completed'].' - '.$lang['tool_logs'].'</td></tr></table></table>';
+@@ -432,4 +456,4 @@
+ echo '</td></tr></table></table>';
+ end_time();
+ eval('echo "'.template('footer').'";');
+-?>
+\ No newline at end of file
++?>
+Index: cp.php
+===================================================================
+--- cp.php	(revision 2508)
++++ cp.php	(revision 2511)
+@@ -406,6 +406,7 @@
+         <tr bgcolor="<?php echo $altbg2?>">
+         <td align="center">
+         <form method="post" action="cp.php?action=settings">
++        <input type="hidden" name="token" value="<?php echo nonce_create('mainsettings'); ?>" />
+         <table cellspacing="0" cellpadding="0" border="0" width="<?php echo $tablewidth?>" align="center">
+         <tr>
+         <td bgcolor="<?php echo $bordercolor?>">
+@@ -575,6 +576,8 @@
+         </tr>
+         <?php
+     } else {
++        request_secure('mainsettings', '', X_NONCE_FORM_EXP, FALSE);
++
+         $sitenamenew = postedVar('sitenamenew');
+         $bbnamenew = postedVar('bbnamenew');
+         $siteurlnew = postedVar('siteurlnew');
+@@ -781,6 +784,7 @@
+     }
+ 
+     if (onSubmit('renamesubmit')) {
++        request_secure('renamemember', '', X_NONCE_AYS_EXP, FALSE);
+         $vUserFrom = postedVar('frmUserFrom', '', TRUE, FALSE);
+         $vUserTo = postedVar('frmUserTo', '', TRUE, FALSE);
+         $adm = new admin();
+@@ -791,6 +795,7 @@
+         <tr bgcolor="<?php echo $altbg2?>">
+         <td>
+         <form action="cp.php?action=rename" method="post">
++        <input type="hidden" name="token" value="<?php echo nonce_create('renamemember'); ?>" />
+         <table cellspacing="0" cellpadding="0" border="0" width="550" align="center">
+         <tr>
+         <td bgcolor="<?php echo $bordercolor?>">
+@@ -859,6 +864,7 @@
+         <tr bgcolor="<?php echo $altbg2?>">
+         <td>
+         <form method="post" action="cp.php?action=forum">
++        <input type="hidden" name="token" value="<?php echo nonce_create('massedforums'); ?>" />
+         <table cellspacing="0" cellpadding="0" border="0" width="90%" align="center">
+         <tr>
+         <td bgcolor="<?php echo $bordercolor?>">
+@@ -1097,10 +1103,12 @@
+         </tr>
+         <?php
+     } else if ($fdetails && noSubmit('forumsubmit')) {
++        $key = template_key('editfid', $fdetails);
+         ?>
+         <tr bgcolor="<?php echo $altbg2?>">
+         <td align="center">
+         <form method="post" action="cp.php?action=forum&amp;fdetails=<?php echo $fdetails?>">
++        <input type="hidden" name="token" value="<?php echo nonce_create($key); ?>" />
+         <table cellspacing="0" cellpadding="0" border="0" width="100%" align="center">
+         <tr>
+         <td bgcolor="<?php echo $bordercolor?>">
+@@ -1247,6 +1255,7 @@
+         </tr>
+         <?php
+     } else if (onSubmit('forumsubmit') && !$fdetails) {
++        request_secure('massedforums', '', X_NONCE_FORM_EXP, FALSE);
+         $queryforum = $db->query("SELECT fid, type, fup FROM ".X_PREFIX."forums WHERE type='forum' OR type='sub'");
+         $db->query("DELETE FROM ".X_PREFIX."forums WHERE name=''");
+         while($forum = $db->fetch_array($queryforum)) {
+@@ -1342,6 +1351,7 @@
+         }
+         echo '<tr bgcolor="'.$altbg2.'" class="ctrtablerow"><td>'.$lang['textforumupdate'].'</td></tr>';
+     } else {
++        request_secure('editfid', $fdetails, X_NONCE_FORM_EXP, FALSE);
+         $namenew = addslashes(htmlspecialchars(postedVar('namenew', 'javascript', FALSE), ENT_COMPAT));  //Forum names are historically double-slashed.  We also have an unusual situation where ENT_COMPAT is the XMB standard.
+         $descnew = postedVar('descnew');
+         $allowhtmlnew = formYesNo('allowhtmlnew');
+@@ -1516,6 +1526,7 @@
+             <tr bgcolor="<?php echo $altbg2?>">
+             <td align="center">
+             <form method="post" action="cp.php?action=members">
++            <input type="hidden" name="token" value="<?php echo nonce_create('masseditmems'); ?>" />
+             <table cellspacing="0" cellpadding="0" border="0" width="91%" align="center">
+             <tr>
+             <td bgcolor="<?php echo $bordercolor?>">
+@@ -1593,7 +1604,7 @@
+                 <tr bgcolor="<?php echo $altbg2?>" class="tablerow">
+                 <td align="center"><input type="checkbox" name="delete<?php echo $member['uid']?>" onclick="addUserDel(<?php echo $member['uid']?>, '<?php echo $member['username']?>', this)" value="<?php echo $member['uid']?>" /></td>
+                 <td><a href="member.php?action=viewpro&amp;member=<?php echo recodeOut($member['username']);?>"><?php echo $member['username']?></a>
+-                <br /><a href="javascript:confirmAction('<?php echo addslashes($lang['confirmDeletePosts']);?>', 'cp.php?action=deleteposts&amp;member=<?php echo recodeJavaOut($member['username'])?>', false);"><strong><?php echo $lang['cp_deleteposts']?></strong></a><?php echo $pending ?>
++                <br /><a href="cp.php?action=deleteposts&amp;member=<?php echo recodeOut($member['username'])?>"><strong><?php echo $lang['cp_deleteposts']?></strong></a><?php echo $pending ?>
+                 </td>
+                 <td><input type="text" size="12" name="pw<?php echo $member['uid']?>"></td>
+                 <td><input type="text" size="3" name="postnum<?php echo $member['uid']?>" value="<?php echo $member['postnum']?>"></td>
+@@ -1632,6 +1643,7 @@
+             <?php
+         }
+     } else if (onSubmit('membersubmit')) {
++        request_secure('masseditmems', '', X_NONCE_FORM_EXP, FALSE);
+         $query = $db->query("SELECT MIN(`uid`) FROM `" . X_PREFIX. "members` WHERE `status`='Super Administrator'");
+         $sa_uid = $db->result($query, 0);
+         $db->free_result($query);
+@@ -1816,19 +1828,32 @@
+ 
+ if ($action == "deleteposts") {
+     $member = postedVar('member', '', TRUE, TRUE, FALSE, 'g');
+-    $countquery = $db->query("SELECT tid, COUNT(*) AS postcount FROM ".X_PREFIX."posts WHERE author='$member' GROUP BY tid");
+-    //Critical: Do not alias tables in the next query.  MySQL 4.0 and MySQL 4.1 use mutually incompatible syntax.
+-    $db->query("DELETE ".X_PREFIX."attachments, ".X_PREFIX."posts FROM ".X_PREFIX."posts LEFT JOIN ".X_PREFIX."attachments USING(pid) WHERE author='$member'");
+-    $db->query("UPDATE ".X_PREFIX."members SET postnum = 0 WHERE username='$member'");
+-    while($threads = $db->fetch_array($countquery)) {
+-        $db->query("UPDATE ".X_PREFIX."threads SET replies=replies-{$threads['postcount']} WHERE tid='{$threads['tid']}'");
+-    }
+-    $countquery = $db->query("SELECT t.tid, COUNT(p.pid) AS postcount FROM ".X_PREFIX."threads AS t LEFT JOIN ".X_PREFIX."posts AS p USING (tid) WHERE t.author='$member' GROUP BY t.tid");
+-    while($threads = $db->fetch_array($countquery)) {
+-        if ($threads['postcount'] == 0) { //This will also delete thread redirectors where the redirect's author is $member
+-            $db->query("DELETE FROM ".X_PREFIX."threads WHERE tid='{$threads['tid']}'");
+-            $db->query("DELETE FROM ".X_PREFIX."favorites WHERE tid='{$threads['tid']}'");
++    if (noSubmit('yessubmit')) {
++        $key = template_key('delps', $member);
++        ?>
++        <tr bgcolor="<?php echo $altbg2; ?>" class="ctrtablerow"><td><?php echo $lang['confirmDeletePosts']; ?><br />
++        <form action="cp.php?action=deleteposts&amp;member=<?php echo recodeOut($member); ?>" method="post">
++          <input type="hidden" name="token" value="<?php echo nonce_create($key); ?>" />
++          <input type="submit" name="yessubmit" value="<?php echo $lang['textyes']; ?>" /> -
++          <input type="submit" name="yessubmit" value="<?php echo $lang['textno']; ?>" />
++        </form></td></tr>
++        <?php
++    } elseif ($lang['textyes'] == $yessubmit) {
++        request_secure('delps', $member, X_NONCE_AYS_EXP, FALSE);
++        $countquery = $db->query("SELECT tid, COUNT(*) AS postcount FROM ".X_PREFIX."posts WHERE author='$member' GROUP BY tid");
++        //Critical: Do not alias tables in the next query.  MySQL 4.0 and MySQL 4.1 use mutually incompatible syntax.
++        $db->query("DELETE ".X_PREFIX."attachments, ".X_PREFIX."posts FROM ".X_PREFIX."posts LEFT JOIN ".X_PREFIX."attachments USING(pid) WHERE author='$member'");
++        $db->query("UPDATE ".X_PREFIX."members SET postnum = 0 WHERE username='$member'");
++        while($threads = $db->fetch_array($countquery)) {
++            $db->query("UPDATE ".X_PREFIX."threads SET replies=replies-{$threads['postcount']} WHERE tid='{$threads['tid']}'");
+         }
++        $countquery = $db->query("SELECT t.tid, COUNT(p.pid) AS postcount FROM ".X_PREFIX."threads AS t LEFT JOIN ".X_PREFIX."posts AS p USING (tid) WHERE t.author='$member' GROUP BY t.tid");
++        while($threads = $db->fetch_array($countquery)) {
++            if ($threads['postcount'] == 0) { //This will also delete thread redirectors where the redirect's author is $member
++                $db->query("DELETE FROM ".X_PREFIX."threads WHERE tid='{$threads['tid']}'");
++                $db->query("DELETE FROM ".X_PREFIX."favorites WHERE tid='{$threads['tid']}'");
++            }
++        }
+     }
+ }
+ 
+@@ -1838,6 +1863,7 @@
+     }
+ 
+     if (onSubmit('upgradesubmit')) {
++        request_secure('insertrawsql', '', X_NONCE_FORM_EXP, FALSE);
+         $upgrade = postedVar('upgrade', '', FALSE, FALSE);
+         if (isset($_FILES['sql_file'])) {
+             $add = get_attached_file($_FILES['sql_file'], 'on', ini_get('upload_max_filesize'), FALSE);
+@@ -1916,6 +1942,7 @@
+         <tr bgcolor="<?php echo $altbg2?>">
+         <td align="center">
+         <form method="post" action="cp.php?action=upgrade" enctype="multipart/form-data">
++        <input type="hidden" name="token" value="<?php echo nonce_create('insertrawsql'); ?>" />
+         <table cellspacing="0" cellpadding="0" border="0" width="550" align="center">
+         <tr>
+         <td bgcolor="<?php echo $bordercolor?>">
+Index: editprofile.php
+===================================================================
+--- editprofile.php	(revision 2508)
++++ editprofile.php	(revision 2511)
+@@ -175,8 +175,10 @@
+ 
+     $userrecode = recodeOut($member['username']);
+ 
+-    eval('echo "'.template('admintool_editprofile').'";');
++    $template = template_secure('admintool_editprofile', 'edpro', $member['uid']);
++    eval('echo "'.$template.'";');
+ } else {
++    request_secure('edpro', $member['uid'], X_NONCE_FORM_EXP);
+     $langfilenew = postedVar('langfilenew', '', FALSE, FALSE);
+     $langfilenew = getLangFileNameFromHash($langfilenew);
+     if ($langfilenew === false) {
+@@ -254,4 +256,4 @@
+ 
+ end_time();
+ eval('echo "'.template('footer').'";');
+-?>
+\ No newline at end of file
++?>
+Index: cp2.php
+===================================================================
+--- cp2.php	(revision 2508)
++++ cp2.php	(revision 2511)
+@@ -223,11 +223,14 @@
+     $single_int = getInt('single');
+     $newtheme = postedVar('newtheme');
+ 
++    $themenonce = nonce_create('massedthemes');
++
+     if (noSubmit('themesubmit') && $single_str == '' && noSubmit('importsubmit')) {
+         ?>
+         <tr bgcolor="<?php echo $altbg2?>">
+         <td>
+-        <form method="POST" action="cp2.php?action=themes" name="theme_main">
++        <form method="post" action="cp2.php?action=themes" name="theme_main">
++        <input type="hidden" name="token" value="<?php echo $themenonce; ?>" />
+         <table cellspacing="0" cellpadding="0" border="0" width="500" align="center">
+         <tr>
+         <td bgcolor="<?php echo $bordercolor?>">
+@@ -311,6 +314,7 @@
+         </form>
+         <br />
+         <form method="post" action="cp2.php?action=themes" enctype="multipart/form-data">
++        <input type="hidden" name="token" value="<?php echo $themenonce; ?>" />
+         <table cellspacing="0" cellpadding="0" border="0" width="500" align="center">
+         <tr>
+         <td bgcolor="<?php echo $bordercolor?>">
+@@ -336,6 +340,7 @@
+     }
+ 
+     if (onSubmit('importsubmit') && isset($_FILES['themefile']['tmp_name'])) {
++        request_secure('massedthemes', '', X_NONCE_FORM_EXP, FALSE);
+         if (!is_uploaded_file($_FILES['themefile']['tmp_name'])) {
+             error($lang['textthemeimportfail'], FALSE);
+         }
+@@ -373,6 +378,7 @@
+         }
+         echo '</td></tr>';
+     } else if (onSubmit('themesubmit')) {
++        request_secure('massedthemes', '', X_NONCE_FORM_EXP, FALSE);
+         $theme_delete = formArray('theme_delete');
+         $theme_name = formArray('theme_name');
+ 
+@@ -405,10 +411,12 @@
+         $query = $db->query("SELECT * FROM ".X_PREFIX."themes WHERE themeid='$single_int'");
+         $themestuff = $db->fetch_array($query);
+         $db->free_result($query);
++        $key = template_key('theme', $single_int);
+         ?>
+         <tr bgcolor="<?php echo $altbg2?>">
+         <td>
+         <form method="post" action="cp2.php?action=themes&amp;single=submit">
++        <input type="hidden" name="token" value="<?php echo nonce_create($key); ?>" />
+         <table cellspacing="0" cellpadding="0" border="0" width="93%" align="center">
+         <tr>
+         <td bgcolor="<?php echo $bordercolor?>">
+@@ -525,6 +533,7 @@
+         <tr bgcolor="<?php echo $altbg2?>">
+         <td align="center">
+         <form method="post" action="cp2.php?action=themes&amp;single=submit">
++        <input type="hidden" name="token" value="<?php echo nonce_create('makenewtheme'); ?>" />
+         <table cellspacing="0" cellpadding="0" border="0" width="93%" align="center">
+         <tr>
+         <td bgcolor="<?php echo $bordercolor?>">
+@@ -625,6 +634,8 @@
+         </tr>
+         <?php
+     } else if ($single_str == "submit" && !$newtheme) {
++        $orig = formInt('orig');
++        request_secure('theme', $orig, X_NONCE_FORM_EXP, FALSE);
+         $namenew = postedVar('namenew');
+         $bgcolornew = postedVar('bgcolornew');
+         $altbg1new = postedVar('altbg1new');
+@@ -650,6 +661,7 @@
+         $db->query("UPDATE ".X_PREFIX."themes SET name='$namenew', bgcolor='$bgcolornew', altbg1='$altbg1new', altbg2='$altbg2new', link='$linknew', bordercolor='$bordercolornew', header='$headernew', headertext='$headertextnew', top='$topnew', catcolor='$catcolornew', tabletext='$tabletextnew', text='$textnew', borderwidth='$borderwidthnew', tablewidth='$tablewidthnew', tablespace='$tablespacenew', fontsize='$fsizenew', font='$fnew', boardimg='$boardlogonew', imgdir='$imgdirnew', smdir='$smdirnew', cattext='$cattextnew' WHERE themeid='$orig'");
+         echo '<tr bgcolor="'.$altbg2.'" class="ctrtablerow"><td>'.$lang['themeupdate'].'</td></tr>';
+     } else if ($single_str == "submit" && $newtheme) {
++        request_secure('makenewtheme', '', X_NONCE_FORM_EXP, FALSE);
+         $namenew = postedVar('namenew');
+         $bgcolornew = postedVar('bgcolornew');
+         $altbg1new = postedVar('altbg1new');
+@@ -970,6 +982,7 @@
+         <tr bgcolor="<?php echo $altbg2?>">
+         <td align="center">
+         <form method="post" action="cp2.php?action=ranks">
++        <input type="hidden" name="token" value="<?php echo nonce_create('editusrranks'); ?>" />
+         <table cellspacing="0" cellpadding="0" border="0" width="650" align="center">
+         <tr>
+         <td bgcolor="<?php echo $bordercolor?>">
+@@ -1034,6 +1047,7 @@
+         </tr>
+         <?php
+     } else {
++        request_secure('editusrranks', '', X_NONCE_FORM_EXP, FALSE);
+         $id = formArray('id');
+         $delete = formArray('delete');
+         $title = formArray('title');
+@@ -1085,6 +1099,7 @@
+         <tr bgcolor="<?php echo $altbg2?>">
+         <td>
+         <form method="post" action="cp2.php?action=newsletter">
++        <input type="hidden" name="token" value="<?php echo nonce_create('sendnewslttr'); ?>" />
+         <table cellspacing="0" cellpadding="0" border="0" width="550" align="center">
+         <tr>
+         <td bgcolor="<?php echo $bordercolor?>">
+@@ -1141,6 +1156,7 @@
+         </tr>
+         <?php
+     } else {
++        request_secure('sendnewslttr', '', X_NONCE_FORM_EXP, FALSE);
+         @set_time_limit(0);
+         $newssubject = postedVar('newssubject');
+         $newsmessage = postedVar('newsmessage');
+@@ -1211,6 +1227,7 @@
+         <tr bgcolor="<?php echo $altbg2?>">
+         <td align="center">
+         <form method="post" action="cp2.php?action=prune">
++        <input type="hidden" name="token" value="<?php echo nonce_create('admmassprune'); ?>" />
+         <table cellspacing="0" cellpadding="0" border="0" width="550">
+         <tr>
+         <td bgcolor="<?php echo $bordercolor?>">
+@@ -1248,7 +1265,7 @@
+         <input type="checkbox" name="pruneByPosts[check]" value="1" />
+         </td>
+         <td>
+-        <select name="pruneBy[posts][type]">
++        <select name="pruneByPosts[type]">
+         <option value="more"><?php echo $lang['prunemorethan']?></option>
+         <option value="is"><?php echo $lang['pruneexactly']?></option>
+         <option value="less"><?php echo $lang['prunelessthan']?></option>
+@@ -1314,6 +1331,7 @@
+         </tr>
+         <?php
+     } else {
++        request_secure('admmassprune', '', X_NONCE_FORM_EXP, FALSE);
+         $pruneByDate = formArray('pruneByDate');
+         $pruneByPosts = formArray('pruneByPosts');
+         $pruneFrom = postedVar('pruneFrom', '', FALSE, FALSE);
+@@ -1483,6 +1501,7 @@
+         <tr bgcolor="<?php echo $altbg2?>">
+         <td align="center">
+         <form method="post" action="cp2.php?action=templates">
++        <input type="hidden" name="token" value="<?php echo nonce_create('rsttemplates'); ?>" />
+         <table cellspacing="0" cellpadding="0" border="0" width="550" align="center">
+         <tr>
+         <td bgcolor="<?php echo $bordercolor?>">
+@@ -1507,6 +1526,7 @@
+     }
+ 
+     if (onSubmit('restoresubmit')) {
++        request_secure('rsttemplates', '', X_NONCE_AYS_EXP, FALSE);
+         if (!file_exists('./templates.xmb')) {
+             error($lang['no_templates'], false, '</td></tr></table></td></tr></table><br />');
+         }
+@@ -1535,10 +1555,12 @@
+             error($lang['selecttemplate'], false, '</td></tr></table></td></tr></table><br />');
+         }
+         $tid = formInt('tid');
++        $key = template_key('tmplt', $tid);
+         ?>
+         <tr bgcolor="<?php echo $altbg2?>">
+         <td align="center">
+         <form method="post" action="cp2.php?action=templates&amp;tid=<?php echo $tid?>">
++        <input type="hidden" name="token" value="<?php echo nonce_create($key); ?>" />
+         <table cellspacing="0" cellpadding="0" border="0" width="550" align="center">
+         <tr>
+         <td bgcolor="<?php echo $bordercolor?>">
+@@ -1572,6 +1594,7 @@
+ 
+     if (onSubmit('editsubmit')) {
+         $tid = postedVar('tid', '', FALSE, FALSE, FALSE, 'g');
++        request_secure('tmplt', $tid, X_NONCE_FORM_EXP, FALSE);
+         $namenew = postedVar('namenew');
+         //Templates are double-slashed so that they can be eval'd as raw strings.
+         $templatenew = $db->escape(getRequestVar('templatenew'));
+@@ -1600,10 +1623,12 @@
+             error($lang['selecttemplate'], false, '</td></tr></table></td></tr></table><br />');
+         }
+         $tid = getInt('tid', 'r');
++        $key = template_key('dtmpl', $tid);
+         ?>
+         <tr bgcolor="<?php echo $altbg2?>">
+         <td align="center">
+         <form method="post" action="cp2.php?action=templates&amp;tid=<?php echo $tid?>">
++        <input type="hidden" name="token" value="<?php echo nonce_create($key); ?>" />
+         <table cellspacing="0" cellpadding="0" border="0" width="550" align="center">
+         <tr>
+         <td bgcolor="<?php echo $bordercolor?>">
+@@ -1629,6 +1654,7 @@
+ 
+     if (onSubmit('deletesubmit')) {
+         $tid = getInt('tid', 'r');
++        request_secure('dtmpl', $tid, X_NONCE_AYS_EXP, FALSE);
+         $db->query("DELETE FROM ".X_PREFIX."templates WHERE id=$tid");
+         echo '<tr bgcolor="'.$altbg2.'" class="ctrtablerow"><td>'.$lang['templatesdelete'].'</td></tr>';
+         redirect('cp2.php?action=templates', 2, X_REDIRECT_JS);
+@@ -1636,10 +1662,12 @@
+ 
+     if (onSubmit('new')) {
+         $newtemplatename = postedVar('newtemplatename', 'javascript', TRUE, FALSE, TRUE);
++        $key = template_key('tmplt', 'new');
+         ?>
+         <tr bgcolor="<?php echo $altbg2?>">
+         <td align="center">
+         <form method="post" action="cp2.php?action=templates&amp;tid=new">
++        <input type="hidden" name="token" value="<?php echo nonce_create($key); ?>" />
+         <table cellspacing="0" cellpadding="0" border="0" width="550" align="center">
+         <tr>
+         <td bgcolor="<?php echo $bordercolor?>">
+@@ -1739,6 +1767,7 @@
+         <tr bgcolor="<?php echo $altbg2?>">
+         <td align="center">
+         <form method="post" action="cp2.php?action=attachments">
++        <input type="hidden" name="token" value="<?php echo nonce_create('massedattach'); ?>" />
+         <table cellspacing="0" cellpadding="0" border="0" width="93%" align="center">
+         <tr>
+         <td bgcolor="<?php echo $bordercolor?>">
+@@ -1839,6 +1868,7 @@
+     }
+ 
+     if (onSubmit('deletesubmit')) {
++        request_secure('massedattach', '', X_NONCE_FORM_EXP, FALSE);
+         $filelist = '';
+         foreach($_POST as $postedname => $rawvalue) {
+             if (substr($postedname, 0, 8) == 'filename' And is_numeric($fileaid = substr($postedname, 8))) {
+@@ -2106,8 +2136,21 @@
+ 
+ if ($action == "delete_attachment") {
+     $aid = getInt('aid');
+-    $db->query("DELETE FROM ".X_PREFIX."attachments WHERE aid=$aid");
+-    echo "<p align=\"center\">Deleted ...</br>";
++    if (noSubmit('yessubmit')) {
++        $key = template_key('delat', $aid);
++        ?>
++        <tr bgcolor="<?php echo $altbg2; ?>" class="ctrtablerow"><td>Are you sure you want to delete this attachment?<br />
++        <form action="cp2.php?action=delete_attachment&amp;aid=<?php echo $aid; ?>&amp;pid=<?php echo $pid; ?>" method="post">
++          <input type="hidden" name="token" value="<?php echo nonce_create($key); ?>" />
++          <input type="submit" name="yessubmit" value="<?php echo $lang['textyes']; ?>" /> -
++          <input type="submit" name="yessubmit" value="<?php echo $lang['textno']; ?>" />
++        </form></td></tr>
++        <?php
++    } elseif ($lang['textyes'] == $yessubmit) {
++        request_secure('delat', $aid, X_NONCE_AYS_EXP, FALSE);
++        $db->query("DELETE FROM ".X_PREFIX."attachments WHERE aid=$aid");
++        echo "<p align=\"center\">Deleted ...</br>";
++    }
+ }
+ 
+ echo '</table></td></tr></table>';
+Index: topicadmin.php
+===================================================================
+--- topicadmin.php	(revision 2508)
++++ topicadmin.php	(revision 2511)
+@@ -194,10 +194,12 @@
+ switch($action) {
+     case 'delete':
+         if (noSubmit('deletesubmit')) {
++            $template = template_secure('topicadmin_delete', 'tadel', min((array)$tid));
+             $tid = $mod->create_tid_string($tid);
+-            eval('echo "'.template('topicadmin_delete').'";');
++            eval('echo "'.$template.'";');
+         } else {
+             $tids = $mod->create_tid_array($tid);
++            request_secure('tadel', min($tids), X_NONCE_AYS_EXP, FALSE);
+             foreach($tids AS $tid) {
+                 $query = $db->query("SELECT author FROM ".X_PREFIX."posts WHERE tid='$tid'");
+                 while($result = $db->fetch_array($query)) {
+@@ -254,10 +256,12 @@
+ 
+     case 'f_close':
+         if (noSubmit('closesubmit')) {
++            $template = template_secure('topicadmin_openclose', 'taclo', min((array)$tid));
+             $tid = $mod->create_tid_string($tid);
+-            eval('echo "'.template('topicadmin_openclose').'";');
++            eval('echo "'.$template.'";');
+         } else {
+             $tids = $mod->create_tid_array($tid);
++            request_secure('taclo', min($tids), X_NONCE_AYS_EXP, FALSE);
+             foreach($tids AS $tid) {
+                 $db->query("UPDATE ".X_PREFIX."threads SET closed='yes' WHERE tid='$tid' AND fid='$fid'");
+                 $mod->log($xmbuser, 'close', $fid, $tid);
+@@ -269,11 +273,13 @@
+ 
+     case 'f_open':
+         if (noSubmit('closesubmit')) {
++            $template = template_secure('topicadmin_openclose', 'taope', min((array)$tid));
+             $tid = $mod->create_tid_string($tid);
+             $lang['textclosethread'] = $lang['textopenthread'];
+-            eval('echo "'.template('topicadmin_openclose').'";');
++            eval('echo "'.$template.'";');
+         } else {
+             $tids = $mod->create_tid_array($tid);
++            request_secure('taope', min($tids), X_NONCE_AYS_EXP, FALSE);
+             foreach($tids AS $tid) {
+                 $db->query("UPDATE ".X_PREFIX."threads SET closed='' WHERE tid='$tid' AND fid='$fid'");
+                 $mod->log($xmbuser, 'open', $fid, $tid);
+@@ -285,10 +291,13 @@
+ 
+     case 'move':
+         if (noSubmit('movesubmit')) {
++            $template = template_secure('topicadmin_move', 'tamov', min((array)$tid));
+             $tid = $mod->create_tid_string($tid);
+             $forumselect = forumList('moveto', false, false, $fid);
+-            eval('echo "'.template('topicadmin_move').'";');
++            eval('echo "'.$template.'";');
+         } else {
++            $tids = $mod->create_tid_array($tid);
++            request_secure('tamov', min($tids), X_NONCE_AYS_EXP, FALSE);
+             $moveto = formInt('moveto');
+             $query = $db->query("SELECT type, fup FROM ".X_PREFIX."forums WHERE fid=$moveto");
+             if ($db->num_rows($query) == 0) {
+@@ -300,7 +309,6 @@
+                 error($lang['errormovingthreads'], FALSE);
+             }
+ 
+-            $tids = $mod->create_tid_array($tid);
+             foreach($tids AS $tid) {
+                 if ($type == "normal") {
+                     $db->query("UPDATE ".X_PREFIX."threads SET fid=$moveto WHERE tid='$tid'");
+@@ -353,10 +361,12 @@
+             } else {
+                 $lang['texttopthread'] = $lang['texttopthread'].' / '.$lang['textuntopthread'];
+             }
++            $template = template_secure('topicadmin_topuntop', 'tatop', min((array)$tid));
+             $tid = $mod->create_tid_string($tid);
+-            eval('echo "'.template('topicadmin_topuntop').'";');
++            eval('echo "'.$template.'";');
+         } else {
+             $tids = $mod->create_tid_array($tid);
++            request_secure('tatop', min($tids), X_NONCE_AYS_EXP, FALSE);
+             foreach($tids AS $tid) {
+                 $query = $db->query("SELECT topped FROM ".X_PREFIX."threads WHERE fid=$fid AND tid='$tid'");
+                 if ($db->num_rows($query) == 0) {
+@@ -442,10 +452,12 @@
+ 
+     case 'bump':
+         if (noSubmit('bumpsubmit')) {
++            $template = template_secure('topicadmin_bump', 'tabum', min((array)$tid));
+             $tid = $mod->create_tid_string($tid);
+-            eval('echo "'.template('topicadmin_bump').'";');
++            eval('echo "'.$template.'";');
+         } else {
+             $tids = $mod->create_tid_array($tid);
++            request_secure('tabum', min((array)$tid), X_NONCE_AYS_EXP, FALSE);
+             foreach($tids AS $tid) {
+                 $query = $db->query("SELECT pid FROM ".X_PREFIX."posts WHERE tid=$tid ORDER BY pid DESC LIMIT 1");
+                 if ($db->num_rows($query) == 1) {
+@@ -465,10 +477,12 @@
+ 
+     case 'empty':
+         if (noSubmit('emptysubmit')) {
++            $template = template_secure('topicadmin_empty', 'taemp', min((array)$tid));
+             $tid = $mod->create_tid_string($tid);
+-            eval('echo "'.template('topicadmin_empty').'";');
++            eval('echo "'.$template.'";');
+         } else {
+             $tids = $mod->create_tid_array($tid);
++            request_secure('taemp', min($tids), X_NONCE_AYS_EXP, FALSE);
+             foreach($tids AS $tid) {
+                 $query = $db->query("SELECT pid FROM ".X_PREFIX."posts WHERE tid=$tid ORDER BY pid ASC LIMIT 1");
+                 if ($db->num_rows($query) == 1) {
+@@ -518,8 +532,10 @@
+                 eval('$posts .= "'.template('topicadmin_split_row').'";');
+             }
+             $db->free_result($query);
+-            eval('echo "'.template('topicadmin_split').'";');
++            $template = template_secure('topicadmin_split', 'taspl', $tid);
++            eval('echo "'.$template.'";');
+         } else {
++            request_secure('taspl', $tid, X_NONCE_AYS_EXP, FALSE);
+             $subject = addslashes(postedVar('subject', 'javascript', TRUE, TRUE, TRUE));  // Subjects are historically double-quoted
+             if ($subject == '') {
+                 error($lang['textnosubject'], false);
+@@ -570,8 +586,10 @@
+     case 'merge':
+         $tid = intval($tid);
+         if (noSubmit('mergesubmit')) {
+-            eval('echo "'.template('topicadmin_merge').'";');
++            $template = template_secure('topicadmin_merge', 'tamer', $tid);
++            eval('echo "'.$template.'";');
+         } else {
++            request_secure('tamer', $tid, X_NONCE_AYS_EXP, FALSE);
+             if ($othertid == 0) {
+                 error($lang['invalidtid'], false);
+             } else if ($tid == $othertid) {
+@@ -670,8 +688,10 @@
+                 }
+                 $db->free_result($query);
+             }
+-            eval('echo "'.template('topicadmin_threadprune').'";');
++            $template = template_secure('topicadmin_threadprune', 'tapru', $tid);
++            eval('echo "'.$template.'";');
+         } else {
++            request_secure('tapru', $tid, X_NONCE_AYS_EXP, FALSE);
+             if (X_SADMIN || $SETTINGS['allowrankedit'] == 'off') {
+                 $query = $db->query("SELECT author, pid, message FROM ".X_PREFIX."posts WHERE tid='$tid'");
+                 while($post = $db->fetch_array($query))    {
+@@ -729,10 +749,13 @@
+ 
+     case 'copy':
+         if (noSubmit('copysubmit')) {
++            $template = template_secure('topicadmin_copy', 'tacop', min((array)$tid));
+             $tid = $mod->create_tid_string($tid);
+             $forumselect = forumList('newfid', false, false);
+-            eval('echo "'.template('topicadmin_copy').'";');
++            eval('echo "'.$template.'";');
+         } else {
++            $tids = $mod->create_tid_array($tid);
++            request_secure('tacop', min($tids), X_NONCE_AYS_EXP, FALSE);
+             if (!formInt('newfid')) {
+                 error($lang['privforummsg'], false);
+             }
+@@ -750,7 +773,6 @@
+                 error($lang['notpermitted'], false);
+             }
+ 
+-            $tids = $mod->create_tid_array($tid);
+             foreach($tids AS $tid) {
+                 $thread = $db->fetch_array($db->query("SELECT * FROM ".X_PREFIX."threads WHERE tid='$tid'"));
+ 
+Index: header.php
+===================================================================
+--- header.php	(revision 2508)
++++ header.php	(revision 2511)
+@@ -35,6 +35,10 @@
+ define('IN_CODE', true);
+ define('X_CACHE_GET', 1);
+ define('X_CACHE_PUT', 2);
++define('X_NONCE_AYS_EXP', 300); // Yes/no prompt expiration, in seconds.
++define('X_NONCE_FORM_EXP', 3600); // Form expiration, in seconds.
++define('X_NONCE_MAX_AGE', 86400); // CAPTCHA expiration, in seconds.
++define('X_NONCE_KEY_LEN', 12); // Size of captchaimages.imagestring.
+ define('X_SET_HEADER', 1);
+ define('X_SET_JS', 2);
+ define('X_SHORTEN_SOFT', 1);
+@@ -370,6 +374,11 @@
+     $onlinetodaycount = 30;
+ }
+ 
++if ($SETTINGS['captcha_code_length'] < 3 or $SETTINGS['captcha_code_length'] >= X_NONCE_KEY_LEN) {
++    $captcha_code_length = 8;
++    $SETTINGS['captcha_code_length'] = 8;
++}
++
+ // Get the user-vars, and make them semi-global
+ 
+ elevateUser(postedVar('xmbuser', '', FALSE, TRUE, FALSE, 'c'), postedVar('xmbpw', '', FALSE, FALSE, FALSE, 'c'));
